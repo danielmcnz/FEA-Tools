@@ -3,6 +3,33 @@ from typing import List
 
 
 class Element:
+    def __init__(self):
+        self.E : int
+        self.L : int
+        self.A : int
+        self.angle : int
+
+        self.assembly_mat : np.ndarray
+
+        self.lambda_mat : np.ndarray
+
+        self.local_stiffness : np.ndarray
+        self.local_stiffness_hat : np.ndarray
+        self.global_stiffness : np.ndarray
+
+        self.global_force : np.ndarray
+        self.local_force : np.ndarray
+
+
+    def calculate_global_stiffness(self) -> None:
+        pass
+
+
+    def calculate_force_vector(self, q) -> None:
+        pass
+
+
+class BarElement(Element):
     """
     A bar element for FEA analysis.
 
@@ -75,6 +102,8 @@ class Element:
         None
         """
 
+        super().__init__()
+
         # assert(assembly_mat.shape == (2, 4))
 
         self.E : int = E
@@ -90,8 +119,8 @@ class Element:
         self.local_stiffness_hat : np.ndarray = None
         self.global_stiffness : np.ndarray = None
 
-        self.global_force_vector : np.ndarray = None
-        self.local_force_vector : np.ndarray = None
+        self.global_force : np.ndarray = None
+        self.local_force : np.ndarray = None
         self.strain : np.ndarray = None
 
 
@@ -131,7 +160,7 @@ class Element:
         if(self.local_stiffness.shape != (2, 2)):
             raise ValueError("local_stiffness must be a 2x2 matrix")
         
-        self.lambda_mat = Element.get_lambda_mat(self.angle)
+        self.lambda_mat = BarElement.get_lambda_mat(self.angle)
 
         self.local_stiffness_hat = self.lambda_mat.T @ self.local_stiffness @ self.lambda_mat
 
@@ -187,13 +216,13 @@ class Element:
         if(self.global_stiffness is None):
             raise AssertionError("global_stiffness matrix cannot be None. First call calculate_global_stiffness().")
 
-        self.global_force_vector = self.local_stiffness_hat @ (self.assembly_mat.T @ q) # in global co-ordinates
+        self.global_force = self.local_stiffness_hat @ (self.assembly_mat.T @ q) # in global co-ordinates
 
         nodal_displacement_vector = self.lambda_mat @ self.assembly_mat.T @ q # in local co-ordinates
 
         self.strain = (nodal_displacement_vector[:,0][1] - nodal_displacement_vector[:,0][0]) / self.L
 
-        self.local_force_vector = self.local_stiffness @ nodal_displacement_vector
+        self.local_force = self.local_stiffness @ nodal_displacement_vector
 
 
     @staticmethod
@@ -236,7 +265,7 @@ class Element:
             The global deflections.
         """
 
-        transformation_mat = Element.get_lambda_mat(element_angle)
+        transformation_mat = BarElement.get_lambda_mat(element_angle)
 
         return transformation_mat @ local_deflections
 
@@ -259,7 +288,7 @@ class Element:
             The local deflections.
         """
 
-        transformation_mat = Element.get_lambda_mat(element_angle).T
+        transformation_mat = BarElement.get_lambda_mat(element_angle).T
 
         return transformation_mat @ global_deflections
     
@@ -283,6 +312,134 @@ class Element:
         """
 
         return lambda_mat.T @ local_forces
+
+
+class FrameElement(Element):
+    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int):
+        super().__init__()
+        
+        self.E : int = E
+        self.I : int = I
+        self.L : int = L
+        self.A : int = A
+        self.angle : int = angle
+
+        self.assembly_mat : np.ndarray = assembly_mat
+
+        self.lambda_mat : np.ndarray = None
+
+        self.local_stiffness : np.ndarray = None
+        self.local_stiffness_hat : np.ndarray = None
+        self.global_stiffness : np.ndarray = None
+
+        self.element_deflection : np.ndarray = None
+        self.structural_deflection : np.ndarray = None
+        self.local_force : np.ndarray = None
+        self.global_force : np.ndarray = None
+
+    
+    def __to_local(self) -> np.ndarray:
+        """
+        """
+
+        beta = (self.A * self.L ** 2) / self.I
+
+        mat = np.array([
+            [beta , 0       , 0          , -beta, 0        , 0          ],
+            [0    , 12      , 6*self.L   , 0    , -12      , 6*self.L   ],
+            [0    , 6*self.L, 4*self.L**2, 0    , -6*self.L, 2*self.L**2],
+            [-beta, 0       , 0          , beta , 0        , 0          ],
+            [0    , -12     , -6*self.L  , 0    , 12       , -6*self.L  ],
+            [0    , 6*self.L, 2*self.L**2, 0    , -6*self.L, 4*self.L**2]
+        ])
+
+        self.local_stiffness = ((self.E * self.I) / (self.L**3)) * mat
+
+        return self.local_stiffness
+    
+
+    def __to_global(self) -> np.ndarray:
+        """
+        """
+
+        self.lambda_mat = FrameElement.get_lambda_mat(self.angle)
+
+        self.local_stiffness_hat = self.lambda_mat.T @ self.local_stiffness @ self.lambda_mat
+
+        return self.local_stiffness_hat
+
+
+    def __to_structure(self) -> np.ndarray:
+        """
+        """
+
+        if(self.local_stiffness_hat is None):
+            raise AssertionError("global_stiffness matrix cannot be None. First call __to_global().")
+
+        self.global_stiffness = self.assembly_mat @ self.local_stiffness_hat @ self.assembly_mat.T
+
+        return self.global_stiffness
+
+
+    def calculate_global_stiffness(self) -> None:
+        """
+        Calculates the global stiffness matrix for a frame element.
+        
+        Returns
+        -------
+        None
+        """
+
+        self.__to_local()
+        self.__to_global()
+        self.__to_structure()
+
+
+    def calculate_force_vector(self, q) -> None:
+        """
+        Calculates the force vector for a bar element.
+        
+        Parameters
+        ----------
+        q : np.ndarray
+            The solution to the equation of motion.
+            
+        Returns
+        -------
+        None
+        """
+
+        if(self.global_stiffness is None):
+            raise AssertionError("global_stiffness matrix cannot be None. First call calculate_global_stiffness().")
+
+        self.structural_deflection = self.assembly_mat.T @ q
+
+        self.element_deflection = self.lambda_mat @ self.structural_deflection
+
+        self.local_force = self.local_stiffness @ self.element_deflection
+
+        self.global_force = self.local_stiffness_hat @ self.structural_deflection
+
+    
+    @staticmethod
+    def get_lambda_mat(angle : int) -> np.ndarray:
+        """
+        """
+
+        c = np.cos(np.deg2rad(angle))
+        s = np.sin(np.deg2rad(angle))
+
+        lambda_mat_3x3 = np.array([[c , s, 0],
+                                   [-s, c, 0],
+                                   [0 , 0, 1]
+        ])
+
+        lambda_mat = np.zeros((6, 6))
+
+        lambda_mat[0:3, 0:3] = lambda_mat_3x3
+        lambda_mat[3:6, 3:6] = lambda_mat_3x3
+
+        return lambda_mat
 
 
 class Structure:

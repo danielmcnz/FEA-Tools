@@ -3,6 +3,7 @@ from typing import List
 
 
 class Element:
+    
     def __init__(self):
         self.E : int
         self.L : int
@@ -315,7 +316,64 @@ class BarElement(Element):
 
 
 class FrameElement(Element):
+    """
+    A frame element for FEA analysis.
+
+    Attributes
+    ----------
+    E : int
+        The Young's modulus of the element.
+    I : int
+        The second moment of area of the element.
+    L : int
+        The length of the element.
+    A : int
+        The cross-sectional area of the element.
+    angle : int
+        The angle of the element.
+    assembly_mat : np.ndarray
+        The assembly matrix for the element.
+    lambda_mat : np.ndarray
+        The lambda matrix for the element.
+    
+    Methods
+    -------
+    __to_local()
+        Returns the local stiffness matrix for a frame element.
+    __to_global()
+        Returns the global stiffness matrix for a frame element.
+    __to_structure()
+        Returns the global stiffness matrix for a frame element.
+    calculate_global_stiffness()
+        Calculates the global stiffness matrix for a frame element.
+    calculate_force_vector(q)
+        Calculates the force vector for a frame element.
+    get_lambda_mat(angle)
+        calculates the lambda matrix
+    """
+     
     def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int):
+        """
+        Parameters
+        ----------
+        assembly_mat : np.ndarray
+            The assembly matrix for the element.
+        E : int
+            The Young's modulus of the element.
+        I : int
+            The second moment of area of the element.
+        L : int
+            The length of the element.
+        A : int
+            The cross-sectional area of the element.
+        angle : int
+            The angle of the element.
+
+        Returns
+        -------
+        None
+        """
+        
         super().__init__()
         
         self.E : int = E
@@ -340,6 +398,12 @@ class FrameElement(Element):
     
     def __to_local(self) -> np.ndarray:
         """
+        creates the local stiffness matrix for a frame element
+
+        Returns
+        -------
+        np.ndarray
+            The local stiffness matrix.
         """
 
         beta = (self.A * self.L ** 2) / self.I
@@ -360,6 +424,12 @@ class FrameElement(Element):
 
     def __to_global(self) -> np.ndarray:
         """
+        creates the global stiffness matrix for a frame element
+
+        Returns
+        -------
+        np.ndarray
+            The global stiffness matrix.
         """
 
         self.lambda_mat = FrameElement.get_lambda_mat(self.angle)
@@ -371,6 +441,12 @@ class FrameElement(Element):
 
     def __to_structure(self) -> np.ndarray:
         """
+        creates the structural stiffness matrix for a frame element
+
+        Returns
+        -------
+        np.ndarray
+            The structural stiffness matrix.
         """
 
         if(self.local_stiffness_hat is None):
@@ -397,7 +473,7 @@ class FrameElement(Element):
 
     def calculate_force_vector(self, q) -> None:
         """
-        Calculates the force vector for a bar element.
+        Calculates the force vector for a frame element.
         
         Parameters
         ----------
@@ -424,6 +500,17 @@ class FrameElement(Element):
     @staticmethod
     def get_lambda_mat(angle : int) -> np.ndarray:
         """
+        calculates the lambda matrix
+
+        Parameters
+        ----------
+        angle : int
+            The angle of the element.
+
+        Returns
+        -------
+        np.ndarray
+            The lambda matrix.
         """
 
         c = np.cos(np.deg2rad(angle))

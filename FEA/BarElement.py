@@ -96,6 +96,7 @@ class BarElement(Element):
 
         self.global_force : np.ndarray = None
         self.local_force : np.ndarray = None
+        self.nodal_displacements : np.ndarray = None
         self.strain : np.ndarray = None
 
 
@@ -193,11 +194,11 @@ class BarElement(Element):
 
         self.global_force = self.local_stiffness_hat @ (self.assembly_mat.T @ q) # in global co-ordinates
 
-        nodal_displacement_vector = self.lambda_mat @ self.assembly_mat.T @ q # in local co-ordinates
+        self.nodal_displacements = self.lambda_mat @ self.assembly_mat.T @ q # in local co-ordinates
 
-        self.strain = (nodal_displacement_vector[:,0][1] - nodal_displacement_vector[:,0][0]) / self.L
+        self.strain = (self.nodal_displacements[:,0][1] - self.nodal_displacements[:,0][0]) / self.L
 
-        self.local_force = self.local_stiffness @ nodal_displacement_vector
+        self.local_force = self.local_stiffness @ self.nodal_displacements
 
 
     @staticmethod
@@ -287,3 +288,15 @@ class BarElement(Element):
         """
 
         return lambda_mat.T @ local_forces
+    
+
+    def plot_element(self, nodes : np.ndarray, displacement_magnitude : int, n_points : int, q : np.ndarray = None) -> np.ndarray:
+        """
+        """
+
+
+
+        q1 = q[:,0][0] * displacement_magnitude
+        q2 = q[:,0][1] * displacement_magnitude
+
+        return np.array([nodes[:,0], nodes[:,1]])

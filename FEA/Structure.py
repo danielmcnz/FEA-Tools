@@ -1,9 +1,9 @@
 import numpy as np
-from typing import List
+from typing import Any, List
 import matplotlib.pyplot as plt
 
-
 from FEA.Element import Element
+
 
 class Structure:
     """
@@ -26,7 +26,7 @@ class Structure:
         Solves for the structure elements and finds the force vectors locally and globally.
     """
 
-    def __init__(self, elements : List[Element], external_force_vector : np.ndarray, element_points : np.ndarray = None) -> None:
+    def __init__(self, elements : List[Element], external_force_vector : np.ndarray) -> None:
         """
         Parameters
         ----------
@@ -41,8 +41,8 @@ class Structure:
         """
         
         self.elements : List[Element] = elements
-        self.element_points : np.ndarray = element_points
         self.external_force_vector : np.ndarray = external_force_vector
+        self.total_stiffness : np.ndarray = None
 
         # equation for motions from K_g * q = F
         self.q : np.ndarray = None
@@ -80,34 +80,35 @@ class Structure:
         None
         """
 
-        total_stiffness : np.ndarray = np.zeros((self.external_force_vector.shape[0], self.external_force_vector.shape[0]))
+        self.total_stiffness : np.ndarray = np.zeros((self.external_force_vector.shape[0], self.external_force_vector.shape[0]))
 
         for element in self.elements:
             element.calculate_global_stiffness()
-            total_stiffness += element.global_stiffness
+            self.total_stiffness += element.global_stiffness
 
-        self.__solve_EOM(total_stiffness)
+        for element in self.elements:
+            self.external_force_vector += element.UDL_forces + element.point_load_forces
+
+        self.__solve_EOM(self.total_stiffness)
 
         for element in self.elements:
             element.calculate_force_vector(self.q)
 
 
-    def single_deflection_display(self, magnification : int, deflection_index : int) -> None:
+    def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, n_points : int) -> None:
         """
-        Displays the structure, where the first element point is the deflected point
-
-        Returns
-        -------
-        None
         """
 
-        deflected_points = self.element_points.copy()
+        i = 0
 
-        print(deflected_points[0])
-        deflected_points[deflection_index][0] += self.q[0] * magnification
-        deflected_points[deflection_index][1] += self.q[1] * magnification
+        for element in self.elements:
+            element_plot = element.plot_element(nodes[i : i+2], displacement_magnitude, n_points, )
+            plt.plot(element_plot[0][0], element_plot[0][1], 'b.-')
+            plt.plot(element_plot[1][0], element_plot[1][1], 'r.-')
+            i += 1
 
-        plt.plot(self.element_points[:,0], self.element_points[:,1], 'b')
-        plt.plot(deflected_points[:,0], deflected_points[:,1], '--', color='r')
+        plt.grid()
+        plt.legend()
+        plt.show()
 
         plt.show()

@@ -22,20 +22,10 @@ class Element:
         self.angle : int
 
         self.UDL : int
-        self.LVL : int
         self.point_load : int
 
         self.UDL_forces : np.ndarray
-        self.UDL_f_eq : np.ndarray
-        self.UDL_F_eq : np.ndarray
-        self.LVL_forces : np.ndarray
-        self.LVL_f_eq : np.ndarray
-        self.LVL_F_eq : np.ndarray
         self.point_load_forces : np.ndarray
-        self.PL_f_shear : np.ndarray = None
-        self.PL_f_axial : np.ndarray = None
-        self.PL_F_shear : np.ndarray = None
-        self.PL_F_axial : np.ndarray = None
 
         self.assembly_mat : np.ndarray
 
@@ -58,9 +48,6 @@ class Element:
 
 
     def calculate_force_vector(self, q) -> None:
-        pass
-
-    def calculate_deflections(self, x) -> None:
         pass
 
 

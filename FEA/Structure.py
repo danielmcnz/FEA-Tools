@@ -41,7 +41,7 @@ class Structure:
         """
         
         self.elements : List[Element] = elements
-        self.external_force_vector : np.ndarray = external_force_vector.astype(np.float64)
+        self.external_force_vector : np.ndarray = external_force_vector
         self.total_stiffness : np.ndarray = None
 
         # equation for motions from K_g * q = F
@@ -87,12 +87,7 @@ class Structure:
             self.total_stiffness += element.global_stiffness
 
         for element in self.elements:
-            if(element.UDL_forces is not None):
-                self.external_force_vector += element.UDL_forces
-            if(element.LVL_forces is not None):
-                self.external_force_vector += element.LVL_forces
-            if(element.point_load_forces is not None):
-                self.external_force_vector += element.point_load_forces
+            self.external_force_vector += element.UDL_forces + element.LVL_forces + element.point_load_forces
 
         self._solve_EOM(self.total_stiffness)
 
@@ -106,22 +101,14 @@ class Structure:
 
         i = 0
 
-        deflections : list = []
-
         for element in self.elements:
-            element_plot = element.plot_element(nodes[i], displacement_magnitude, resolution, )
-            deflections.append(element_plot[1])
-            plt.plot(element_plot[0][0], element_plot[0][1], 'b.-', label="Undeflected")
-            plt.plot(element_plot[1][0], element_plot[1][1], 'r.-', label="Deflected")
+            element_plot = element.plot_element(nodes[i : i+2], displacement_magnitude, resolution, )
+            plt.plot(element_plot[0][0], element_plot[0][1], 'b.-')
+            plt.plot(element_plot[1][0], element_plot[1][1], 'r.-')
             i += 1
 
-        handles, labels = plt.gca().get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
-
         plt.grid()
-        plt.legend(by_label.values(), by_label.keys())
+        plt.legend()
         plt.show()
 
         plt.show()
-
-        return np.array(element_plot)

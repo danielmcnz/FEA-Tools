@@ -95,14 +95,14 @@ class Structure:
             element.calculate_force_vector(self.q)
 
 
-    def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, n_points : int) -> None:
+    def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
         """
         """
 
         i = 0
 
         for element in self.elements:
-            element_plot = element.plot_element(nodes[i : i+2], displacement_magnitude, n_points, )
+            element_plot = element.plot_element(nodes[i : i+2], displacement_magnitude, resolution, )
             plt.plot(element_plot[0][0], element_plot[0][1], 'b.-')
             plt.plot(element_plot[1][0], element_plot[1][1], 'r.-')
             i += 1

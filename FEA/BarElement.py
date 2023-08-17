@@ -37,11 +37,11 @@ class BarElement(Element):
     
     Methods
     -------
-    __to_local()
+    _to_local()
         Returns the local stiffness matrix for a bar element.
-    __to_global()
+    _to_global()
         Returns the global stiffness matrix for a bar element.
-    __to_structure()
+    _to_structure()
         Returns the global stiffness matrix for a bar element.
     calculate_global_stiffness()
         Calculates the global stiffness matrix for a bar element.
@@ -100,7 +100,7 @@ class BarElement(Element):
         self.strain : np.ndarray = None
 
 
-    def __to_local(self) -> np.ndarray:
+    def _to_local(self) -> np.ndarray:
         """
         Returns the local stiffness matrix for a bar element.
 
@@ -120,7 +120,7 @@ class BarElement(Element):
         return self.local_stiffness
     
 
-    def __to_global(self) -> List[np.ndarray]:
+    def _to_global(self) -> List[np.ndarray]:
         """
         Returns the global stiffness matrix for a bar element.
 
@@ -143,7 +143,7 @@ class BarElement(Element):
         return self.local_stiffness_hat, self.lambda_mat # global_stiffnes, lambda
     
 
-    def __to_structure(self) -> np.ndarray:
+    def _to_structure(self) -> np.ndarray:
         """
         Returns the global stiffness matrix for a bar element.
         
@@ -170,9 +170,9 @@ class BarElement(Element):
         None
         """
 
-        self.__to_local()
-        self.__to_global()
-        self.__to_structure()
+        self._to_local()
+        self._to_global()
+        self._to_structure()
 
     
     def calculate_force_vector(self, q) -> None:

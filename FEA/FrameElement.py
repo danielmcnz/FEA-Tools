@@ -26,11 +26,11 @@ class FrameElement(Element):
     
     Methods
     -------
-    __to_local()
+    _to_local()
         Returns the local stiffness matrix for a frame element.
-    __to_global()
+    _to_global()
         Returns the global stiffness matrix for a frame element.
-    __to_structure()
+    _to_structure()
         Returns the global stiffness matrix for a frame element.
     calculate_global_stiffness()
         Calculates the global stiffness matrix for a frame element.
@@ -40,7 +40,7 @@ class FrameElement(Element):
         calculates the lambda matrix
     """
      
-    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : int = 0, point_load : int = 0):
+    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : int = 0, LVL : int = 0, point_load : int = 0):
         """
         Parameters
         ----------
@@ -71,9 +71,11 @@ class FrameElement(Element):
         self.angle : int = angle
 
         self.UDL : int = UDL
+        self.LVL : int = LVL
         self.point_load : int = point_load
 
         self.UDL_forces : np.ndarray = None
+        self.LVL_forces : np.ndarray = None
         self.point_load_forces : np.ndarray = None
 
         self.assembly_mat : np.ndarray = assembly_mat
@@ -90,7 +92,7 @@ class FrameElement(Element):
         self.global_force : np.ndarray = None
 
     
-    def __to_local(self) -> np.ndarray:
+    def _to_local(self) -> np.ndarray:
         """
         creates the local stiffness matrix for a frame element
 
@@ -116,7 +118,7 @@ class FrameElement(Element):
         return self.local_stiffness
     
 
-    def __to_global(self) -> np.ndarray:
+    def _to_global(self) -> np.ndarray:
         """
         creates the global stiffness matrix for a frame element
 
@@ -133,7 +135,7 @@ class FrameElement(Element):
         return self.local_stiffness_hat
 
 
-    def __to_structure(self) -> np.ndarray:
+    def _to_structure(self) -> np.ndarray:
         """
         creates the structural stiffness matrix for a frame element
 
@@ -144,7 +146,7 @@ class FrameElement(Element):
         """
 
         if(self.local_stiffness_hat is None):
-            raise AssertionError("global_stiffness matrix cannot be None. First call __to_global().")
+            raise AssertionError("global_stiffness matrix cannot be None. First call _to_global().")
 
         self.global_stiffness = self.assembly_mat @ self.local_stiffness_hat @ self.assembly_mat.T
 
@@ -167,6 +169,22 @@ class FrameElement(Element):
         F_eq = self.lambda_mat.T @ f_eq
 
         self.UDL_forces = self.assembly_mat.T @ F_eq
+
+
+    def _LVL_forces(self) -> None:
+
+        f_eq = np.array([
+            [0],
+            [3 * self.LVL * self.L / 20],
+            [self.LVL * self.L ** 2 / 30],
+            [0],
+            [7 * self.LVL * self.L / 20],
+            [-self.LVL * self.L ** 2 / 20]
+        ])
+
+        F_eq = self.lambda_mat.T @ f_eq
+
+        self.LVL_forces = self.assembly_mat.T @ F_eq
 
 
     def _point_load_forces(self) -> None:
@@ -196,11 +214,12 @@ class FrameElement(Element):
         None
         """
 
-        self.__to_local()
-        self.__to_global()
-        self.__to_structure()
+        self._to_local()
+        self._to_global()
+        self._to_structure()
 
         self._UDL_forces()
+        self._LVL_forces()
         self._point_load_forces()
 
 

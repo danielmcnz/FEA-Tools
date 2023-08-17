@@ -20,7 +20,7 @@ class Structure:
 
     Methods
     -------
-    __solve_EOM(K_g)
+    _solve_EOM(K_g)
         Solves the equation of motion K_g * q = F for q.
     solve()
         Solves for the structure elements and finds the force vectors locally and globally.
@@ -48,7 +48,7 @@ class Structure:
         self.q : np.ndarray = None
 
 
-    def __solve_EOM(self, K_g : np.ndarray) -> np.ndarray:
+    def _solve_EOM(self, K_g : np.ndarray) -> np.ndarray:
         """
         Solves the equation of motion K_g * q = F for q.
 
@@ -87,9 +87,9 @@ class Structure:
             self.total_stiffness += element.global_stiffness
 
         for element in self.elements:
-            self.external_force_vector += element.UDL_forces + element.point_load_forces
+            self.external_force_vector += element.UDL_forces + element.LVL_forces + element.point_load_forces
 
-        self.__solve_EOM(self.total_stiffness)
+        self._solve_EOM(self.total_stiffness)
 
         for element in self.elements:
             element.calculate_force_vector(self.q)

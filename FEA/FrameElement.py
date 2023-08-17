@@ -40,7 +40,7 @@ class FrameElement(Element):
         calculates the lambda matrix
     """
      
-    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : int = 0, LVL : int = 0, point_load : int = 0):
+    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : int = 0, LVL : int = 0, point_load : tuple = (0, 0, 0)):
         """
         Parameters
         ----------
@@ -56,6 +56,11 @@ class FrameElement(Element):
             The cross-sectional area of the element.
         angle : int
             The angle of the element.
+        UDL : int
+        LVL : int
+        point_load : tuple
+            format : (distance from node 1 (a), angle of load from element surface perpendicular CCW, magnitude of load)
+            The point load on the element.
 
         Returns
         -------
@@ -72,11 +77,19 @@ class FrameElement(Element):
 
         self.UDL : int = UDL
         self.LVL : int = LVL
-        self.point_load : int = point_load
+        self.point_load : tuple = point_load
 
         self.UDL_forces : np.ndarray = None
+        self.UDL_f_eq : np.ndarray = None
+        self.UDL_F_eq : np.ndarray = None
         self.LVL_forces : np.ndarray = None
+        self.LVL_f_eq : np.ndarray = None
+        self.LVL_F_eq : np.ndarray = None
         self.point_load_forces : np.ndarray = None
+        self.PL_f_shear : np.ndarray = None
+        self.PL_f_axial : np.ndarray = None
+        self.PL_F_shear : np.ndarray = None
+        self.PL_F_axial : np.ndarray = None
 
         self.assembly_mat : np.ndarray = assembly_mat
 
@@ -85,11 +98,13 @@ class FrameElement(Element):
         self.local_stiffness : np.ndarray = None
         self.local_stiffness_hat : np.ndarray = None
         self.global_stiffness : np.ndarray = None
+        self.strain : np.ndarray = None
+
+        self.local_force : np.ndarray = None
+        self.global_force : np.ndarray = None
 
         self.element_deflections : np.ndarray = None
         self.structural_deflections : np.ndarray = None
-        self.local_force : np.ndarray = None
-        self.global_force : np.ndarray = None
 
     
     def _to_local(self) -> np.ndarray:
@@ -157,7 +172,10 @@ class FrameElement(Element):
         """
         """
 
-        f_eq = np.array([
+        if(self.UDL == 0):
+            return
+
+        self.UDL_f_eq = np.array([
             [0],
             [self.UDL * self.L / 2],
             [self.UDL * self.L ** 2 / 12],
@@ -166,14 +184,17 @@ class FrameElement(Element):
             [-self.UDL * self.L ** 2 / 12]
         ])
 
-        F_eq = self.lambda_mat.T @ f_eq
+        self.UDL_F_eq = self.lambda_mat.T @ self.UDL_f_eq
 
-        self.UDL_forces = self.assembly_mat.T @ F_eq
+        self.UDL_forces = self.assembly_mat.T @ self.UDL_F_eq
 
 
     def _LVL_forces(self) -> None:
 
-        f_eq = np.array([
+        if(self.LVL == 0):
+            return
+
+        self.LVL_f_eq = np.array([
             [0],
             [3 * self.LVL * self.L / 20],
             [self.LVL * self.L ** 2 / 30],
@@ -182,27 +203,55 @@ class FrameElement(Element):
             [-self.LVL * self.L ** 2 / 20]
         ])
 
-        F_eq = self.lambda_mat.T @ f_eq
+        self.LVL_F_eq = self.lambda_mat.T @ self.LVL_f_eq
 
-        self.LVL_forces = self.assembly_mat.T @ F_eq
+        self.LVL_forces = self.assembly_mat.T @ self.LVL_F_eq
 
 
     def _point_load_forces(self) -> None:
         """
         """
 
-        f_eq = np.array([
+        if(self.point_load[2] == 0):
+            return
+
+        a = self.point_load[0]
+        angle = self.point_load[1]
+        point_load = self.point_load[2]
+
+        shear_mag = point_load * np.cos(np.deg2rad(angle))
+        axial_mag = point_load * np.sin(np.deg2rad(angle))
+
+        self.PL_f_shear = np.array([
             [0],
-            [self.point_load / 2],
-            [self.point_load * self.L / 8],
+            [1 - 3 * a ** 2 / self.L ** 2 + 2 * a ** 3 / self.L ** 3],
+            [a ** 3 / self.L ** 2 - 2 * a ** 2 / self.L + a],
             [0],
-            [self.point_load / 2],
-            [-self.point_load * self.L / 8]
+            [3 * a ** 2 / self.L ** 2 - 2 * a ** 3 / self.L ** 3],
+            [a ** 3 / self.L ** 2 - a ** 2 / self.L]
         ])
 
-        F_eq = self.lambda_mat.T @ f_eq
+        self.PL_f_shear *= shear_mag
 
-        self.point_load_forces = self.assembly_mat.T @ F_eq
+        self.PL_f_axial = np.array([
+            [1 - a / self.L],
+            [0],
+            [0],
+            [-a / self.L],
+            [0],
+            [0]
+        ])
+
+        self.PL_f_axial *= axial_mag
+
+        self.PL_F_shear = self.lambda_mat.T @ self.PL_f_shear
+        self.PL_F_axial = self.lambda_mat.T @ self.PL_f_axial
+
+        self.point_load_forces = self.assembly_mat.T @ (self.PL_F_shear + self.PL_F_axial)
+
+        # self.PL_F_eq = self.lambda_mat.T @ self.PL_f_eq
+
+        # self.point_load_forces = self.assembly_mat.T @ self.PL_F_eq
 
 
     def calculate_global_stiffness(self) -> None:
@@ -245,6 +294,8 @@ class FrameElement(Element):
         self.element_deflections = self.lambda_mat @ self.structural_deflections
 
         self.local_force = self.local_stiffness @ self.element_deflections
+        
+        self.strain = (self.element_deflections[3] - self.element_deflections[0]) / self.L
 
         self.global_force = self.local_stiffness_hat @ self.structural_deflections
 
@@ -279,14 +330,9 @@ class FrameElement(Element):
         lambda_mat[3:6, 3:6] = lambda_mat_3x3
 
         return lambda_mat
+    
 
-
-    def plot_element(self, nodes : np.ndarray, displacement_magnitude : int, n_points : int, q : np.ndarray = None) -> np.ndarray:
-        """
-        """
-        
-        x = np.linspace(0, self.L, n_points)
-
+    def calculate_deflections(self, x) -> np.ndarray:
         phi_1 = (1 - x / self.L)
         phi_2 = x / self.L
 
@@ -300,6 +346,17 @@ class FrameElement(Element):
 
         deflections_XG = element_axial_displacement * np.cos(np.deg2rad(self.angle)) - element_transverse_displacement * np.sin(np.deg2rad(self.angle))
         deflections_YG = element_axial_displacement * np.sin(np.deg2rad(self.angle)) + element_transverse_displacement * np.cos(np.deg2rad(self.angle))
+
+        return np.array([deflections_XG, deflections_YG])
+
+
+    def plot_element(self, nodes : np.ndarray, displacement_magnitude : int, n_points : int, q : np.ndarray = None) -> np.ndarray:
+        """
+        """
+        
+        x = np.linspace(0, self.L, n_points)
+
+        deflections_XG, deflections_YG = self.calculate_deflections(x)
 
         x_undeflected = np.linspace(nodes[0][0], nodes[1][0], n_points)
         y_undeflected = np.linspace(nodes[0][1], nodes[1][1], n_points)

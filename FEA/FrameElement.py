@@ -40,7 +40,7 @@ class FrameElement(Element):
         calculates the lambda matrix
     """
      
-    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : int = 0, LVL : int = 0, point_load : tuple = (0, 0, 0)):
+    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : int = 0, LVL : int = 0, point_load : tuple = (0, 0, 0, 1, 1)):
         """
         Parameters
         ----------
@@ -59,7 +59,7 @@ class FrameElement(Element):
         UDL : int
         LVL : int
         point_load : tuple
-            format : (distance from node 1 (a), angle of load from element surface perpendicular CCW, magnitude of load)
+            format : (distance from node 1 (a), angle of load from element surface perpendicular CCW, magnitude of load, x sign, y sign)
             The point load on the element.
 
         Returns
@@ -186,7 +186,7 @@ class FrameElement(Element):
 
         self.UDL_F_eq = self.lambda_mat.T @ self.UDL_f_eq
 
-        self.UDL_forces = self.assembly_mat.T @ self.UDL_F_eq
+        self.UDL_forces = self.assembly_mat @ self.UDL_F_eq
 
 
     def _LVL_forces(self) -> None:
@@ -205,7 +205,7 @@ class FrameElement(Element):
 
         self.LVL_F_eq = self.lambda_mat.T @ self.LVL_f_eq
 
-        self.LVL_forces = self.assembly_mat.T @ self.LVL_F_eq
+        self.LVL_forces = self.assembly_mat @ self.LVL_F_eq
 
 
     def _point_load_forces(self) -> None:
@@ -218,9 +218,11 @@ class FrameElement(Element):
         a = self.point_load[0]
         angle = self.point_load[1]
         point_load = self.point_load[2]
+        x_sign = self.point_load[3]
+        y_sign = self.point_load[4]
 
-        shear_mag = point_load * np.cos(np.deg2rad(angle))
-        axial_mag = point_load * np.sin(np.deg2rad(angle))
+        shear_mag = y_sign * point_load * np.cos(np.deg2rad(angle))
+        axial_mag = x_sign * point_load * np.sin(np.deg2rad(angle))
 
         self.PL_f_shear = np.array([
             [0],
@@ -237,7 +239,7 @@ class FrameElement(Element):
             [1 - a / self.L],
             [0],
             [0],
-            [-a / self.L],
+            [a / self.L],
             [0],
             [0]
         ])
@@ -247,11 +249,7 @@ class FrameElement(Element):
         self.PL_F_shear = self.lambda_mat.T @ self.PL_f_shear
         self.PL_F_axial = self.lambda_mat.T @ self.PL_f_axial
 
-        self.point_load_forces = self.assembly_mat.T @ (self.PL_F_shear + self.PL_F_axial)
-
-        # self.PL_F_eq = self.lambda_mat.T @ self.PL_f_eq
-
-        # self.point_load_forces = self.assembly_mat.T @ self.PL_F_eq
+        self.point_load_forces = self.assembly_mat @ (self.PL_F_shear + self.PL_F_axial)
 
 
     def calculate_global_stiffness(self) -> None:

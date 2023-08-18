@@ -102,17 +102,26 @@ class Structure:
 
     def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
         """
+        Plots the structure.
+
+        Parameters
+        ----------
+        nodes : np.ndarray
+            The nodes of the structure, made up of the elements of all the nodes.
+        displacement_magnitude : int
+            The magnitude to increase the displacements visually by.
+        resolution : int
+            The number of points to plot between each node.
+
+        Returns
+        -------
+        None
         """
 
         i = 0
 
-        deflections : list = []
-
         for element in self.elements:
-            element_plot = element.plot_element(nodes[i], displacement_magnitude, resolution, )
-            deflections.append(element_plot[1])
-            plt.plot(element_plot[0][0], element_plot[0][1], 'b.-', label="Undeflected")
-            plt.plot(element_plot[1][0], element_plot[1][1], 'r.-', label="Deflected")
+            element.plot_element(nodes[i], displacement_magnitude, resolution)
             i += 1
 
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -123,5 +132,3 @@ class Structure:
         plt.show()
 
         plt.show()
-
-        return np.array(element_plot)

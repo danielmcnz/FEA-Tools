@@ -1,11 +1,9 @@
-import numpy as np
-
-from FEA.Element import Element
+from FEA.Element import *
 
 
 class FrameElement(Element):
     """
-    A frame element for FEA analysis.
+    An element for FEA analysis.
 
     Attributes
     ----------
@@ -170,6 +168,11 @@ class FrameElement(Element):
 
     def _UDL_forces(self) -> None:
         """
+        Calculates the uniformly distributed load forces if present on the element.
+
+        Returns
+        -------
+        None
         """
 
         if(self.UDL == 0):
@@ -190,6 +193,13 @@ class FrameElement(Element):
 
 
     def _LVL_forces(self) -> None:
+        """
+        Calculates the linearly distributed load forces if present on the element.
+
+        Returns
+        -------
+        None
+        """
 
         if(self.LVL == 0):
             return
@@ -210,6 +220,13 @@ class FrameElement(Element):
 
     def _point_load_forces(self) -> None:
         """
+        Calculates the point load forces if present on the element.
+            This includes the shear and axial equivalent forces (locally and globally), and then
+            creates the force vectors.
+
+        Returns
+        -------
+        None
         """
 
         if(self.point_load[2] == 0):
@@ -331,6 +348,9 @@ class FrameElement(Element):
     
 
     def calculate_deflections(self, x) -> np.ndarray:
+        """
+        """
+
         phi_1 = (1 - x / self.L)
         phi_2 = x / self.L
 
@@ -348,18 +368,33 @@ class FrameElement(Element):
         return np.array([deflections_XG, deflections_YG])
 
 
-    def plot_element(self, nodes : np.ndarray, displacement_magnitude : int, n_points : int, q : np.ndarray = None) -> np.ndarray:
+    def plot_element(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
         """
+        Plots the element in both deflected and undeflected form.
+
+        Parameters
+        ----------
+        nodes : np.ndarray
+            The nodes of the element.
+        displacement_magnitude : int
+            The magnitude to increase the displacements visually by.
+        resolution : int
+            The number of points to plot the element with.
+
+        Returns
+        -------
+        None
         """
         
-        x = np.linspace(0, self.L, n_points)
+        x = np.linspace(0, self.L, resolution)
 
         deflections_XG, deflections_YG = self.calculate_deflections(x)
 
-        x_undeflected = np.linspace(nodes[0][0], nodes[1][0], n_points)
-        y_undeflected = np.linspace(nodes[0][1], nodes[1][1], n_points)
+        x_undeflected = np.linspace(nodes[0][0], nodes[1][0], resolution)
+        y_undeflected = np.linspace(nodes[0][1], nodes[1][1], resolution)
 
         x_deflected = x_undeflected + deflections_XG * displacement_magnitude
         y_deflected = y_undeflected + deflections_YG * displacement_magnitude
 
-        return np.array([[x_undeflected, y_undeflected], [x_deflected, y_deflected]])
+        plt.plot(x_undeflected, y_undeflected, 'b.-', label="Undeflected")
+        plt.plot(x_deflected, y_deflected, 'r.-', label="Deflected")

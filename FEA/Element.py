@@ -374,7 +374,7 @@ class Element():
         return np.array([deflections_XG, deflections_YG])
 
 
-    def plot_element(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
+    def plot_element(self, axes, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
         """
         Plots the element in both deflected and undeflected form.
 
@@ -402,5 +402,5 @@ class Element():
         x_deflected = x_undeflected + deflections_XG * displacement_magnitude
         y_deflected = y_undeflected + deflections_YG * displacement_magnitude
 
-        plt.plot(x_undeflected, y_undeflected, 'b.-', label="Undeflected")
-        plt.plot(x_deflected, y_deflected, 'r.-', label="Deflected")
+        axes.plot(x_undeflected, y_undeflected, 'b.-', label="Undeflected")
+        axes.plot(x_deflected, y_deflected, 'r.-', label="Deflected")

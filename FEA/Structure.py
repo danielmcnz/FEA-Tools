@@ -65,7 +65,7 @@ class Structure:
 
         if(self.external_force_vector.shape != (K_g.shape[0], 1)):
             raise ValueError("external_force_vector must be a column vector of size K_g.shape[0]")
-        
+
         self.q = np.linalg.solve(K_g, self.external_force_vector)
 
         return self.q
@@ -100,7 +100,7 @@ class Structure:
             element.calculate_force_vector(self.q)
 
 
-    def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
+    def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int, axes = plt) -> None:
         """
         Plots the structure.
 
@@ -121,14 +121,12 @@ class Structure:
         i = 0
 
         for element in self.elements:
-            element.plot_element(nodes[i], displacement_magnitude, resolution)
+            element.plot_element(axes, nodes[i], displacement_magnitude, resolution)
             i += 1
 
-        handles, labels = plt.gca().get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
+        # handles, labels = axes.gca().get_legend_handles_labels()
+        # by_label = dict(zip(labels, handles))
 
-        plt.grid()
-        plt.legend(by_label.values(), by_label.keys())
-        plt.show()
-
-        plt.show()
+        axes.grid()
+        # axes.legend(by_label.values(), by_label.keys())
+        # axes.show()

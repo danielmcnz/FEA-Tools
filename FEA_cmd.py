@@ -33,20 +33,6 @@ HELP = """
     Will display the deflected and original structure / element.
 """
 
-def get_element_type() -> type(Element):
-    analysis = input("type of analysis (bar or frame)? ")
-
-    element_type : type(Element)
-
-    if(analysis == "bar"):
-        element_type = type(BarElement)
-    elif(analysis == "frame"):
-        element_type = type(FrameElement)
-    else:
-        print("invalid analysis type")
-
-    return element_type
-
 
 def get_n_elements() -> int:
 
@@ -102,7 +88,7 @@ def check_integer_input(prompt : str):
         print("input must be an integer")
     
 
-def create_elements(element_type : type(Element), n_elements : int):
+def create_elements(n_elements : int):
 
     elements = []
 
@@ -115,15 +101,11 @@ def create_elements(element_type : type(Element), n_elements : int):
 
         assembly_matrix  = process_matrix(assembly_matrix_str)
 
-        if(element_type == type(FrameElement)):
-            I = check_integer_input("Intertia of element {i}: ".format(i=i))
-            UDL = check_integer_input("UDL of element {i}: ".format(i=i))
-            point_load = check_integer_input("point load of element {i}: ".format(i=i))
+        I = check_integer_input("Intertia of element {i}: ".format(i=i))
+        UDL = check_integer_input("UDL of element {i}: ".format(i=i))
+        point_load = check_integer_input("point load of element {i}: ".format(i=i))
 
-            element = FrameElement(assembly_matrix, E, I, L, A, angle, UDL, point_load)
-        else:
-            element = BarElement(assembly_matrix, E, L, A, angle)
-
+        element = Element(assembly_matrix, E, I, L, A, angle, UDL, point_load)
         elements.append(element)
 
     return elements
@@ -176,11 +158,9 @@ def process_input_info(structure : Structure):
 
 
 def main():
-    element_type = get_element_type()
-
     n_elements = get_n_elements()
 
-    elements = create_elements(element_type, n_elements)
+    elements = create_elements(n_elements)
 
     structure = create_structure(elements)
 

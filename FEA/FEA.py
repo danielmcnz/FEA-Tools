@@ -1,3 +1,5 @@
-from FEA.Structure import *
-from FEA.BarElement import *
-from FEA.FrameElement import *
+import numpy as np
+import matplotlib.pyplot as plt
+
+from FEA.Structure import Structure
+from FEA.Element import Element

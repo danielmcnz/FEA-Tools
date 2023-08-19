@@ -41,7 +41,7 @@ class Structure:
         """
         
         self.elements : List[Element] = elements
-        self.external_force_vector : np.ndarray = external_force_vector
+        self.external_force_vector : np.ndarray = external_force_vector.astype(np.float64)
         self.total_stiffness : np.ndarray = None
 
         # equation for motions from K_g * q = F
@@ -87,7 +87,12 @@ class Structure:
             self.total_stiffness += element.global_stiffness
 
         for element in self.elements:
-            self.external_force_vector += element.UDL_forces + element.LVL_forces + element.point_load_forces
+            if(element.UDL_forces is not None):
+                self.external_force_vector += element.UDL_forces
+            if(element.LVL_forces is not None):
+                self.external_force_vector += element.LVL_forces
+            if(element.point_load_forces is not None):
+                self.external_force_vector += element.point_load_forces
 
         self._solve_EOM(self.total_stiffness)
 
@@ -97,18 +102,33 @@ class Structure:
 
     def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
         """
+        Plots the structure.
+
+        Parameters
+        ----------
+        nodes : np.ndarray
+            The nodes of the structure, made up of the elements of all the nodes.
+        displacement_magnitude : int
+            The magnitude to increase the displacements visually by.
+        resolution : int
+            The number of points to plot between each node.
+
+        Returns
+        -------
+        None
         """
 
         i = 0
 
         for element in self.elements:
-            element_plot = element.plot_element(nodes[i : i+2], displacement_magnitude, resolution, )
-            plt.plot(element_plot[0][0], element_plot[0][1], 'b.-')
-            plt.plot(element_plot[1][0], element_plot[1][1], 'r.-')
+            element.plot_element(nodes[i], displacement_magnitude, resolution)
             i += 1
 
+        handles, labels = plt.gca().get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+
         plt.grid()
-        plt.legend()
+        plt.legend(by_label.values(), by_label.keys())
         plt.show()
 
         plt.show()

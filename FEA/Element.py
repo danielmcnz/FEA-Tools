@@ -120,7 +120,7 @@ class Element():
         """
 
         if(self.I == 0):
-            self.I = 1
+            self.I = 1e-12
         beta = (self.A * self.L ** 2) / self.I
 
         mat = np.array([

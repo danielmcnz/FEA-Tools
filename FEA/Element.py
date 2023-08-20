@@ -81,17 +81,21 @@ class Element():
         self.LVL : int = LVL
         self.point_load : tuple = point_load
 
-        self.UDL_forces : np.ndarray    = None
-        self.UDL_f_eq : np.ndarray      = None
-        self.UDL_F_eq : np.ndarray      = None
-        self.LVL_forces : np.ndarray    = None
-        self.LVL_f_eq : np.ndarray      = None
-        self.LVL_F_eq : np.ndarray      = None
+        self.UDL_forces : np.ndarray        = None
+        self.UDL_F_shear : np.ndarray       = None
+        self.UDL_F_axial : np.ndarray       = None
+        self.UDL_F_shear : np.ndarray       = None
+        self.UDL_F_axial : np.ndarray       = None
+        self.LVL_forces : np.ndarray        = None
+        self.LVL_f_shear : np.ndarray       = None
+        self.LVL_f_shear : np.ndarray       = None
+        self.LVL_F_axial : np.ndarray       = None
+        self.LVL_F_axial : np.ndarray       = None
         self.point_load_forces : np.ndarray = None
-        self.PL_f_shear : np.ndarray    = None
-        self.PL_f_axial : np.ndarray    = None
-        self.PL_F_shear : np.ndarray    = None
-        self.PL_F_axial : np.ndarray    = None
+        self.PL_f_shear : np.ndarray        = None
+        self.PL_f_axial : np.ndarray        = None
+        self.PL_F_shear : np.ndarray        = None
+        self.PL_F_axial : np.ndarray        = None
 
         self.assembly_mat : np.ndarray = assembly_mat
 
@@ -183,19 +187,35 @@ class Element():
 
         if(self.UDL == 0):
             return
+        
+        shear_mag = self.UDL * np.cos(np.deg2rad(self.angle))
+        axial_mag = self.UDL * np.sin(np.deg2rad(self.angle))
 
-        self.UDL_f_eq = np.array([
+        self.UDL_f_shear = np.array([
             [0],
-            [self.UDL * self.L / 2],
-            [self.UDL * self.L ** 2 / 12],
+            [self.L / 2],
+            [self.L ** 2 / 12],
             [0],
-            [self.UDL * self.L / 2],
-            [-self.UDL * self.L ** 2 / 12]
+            [self.L / 2],
+            [-self.L ** 2 / 12]
         ])
 
-        self.UDL_F_eq = self.lambda_mat.T @ self.UDL_f_eq
+        self.UDL_f_axial = np.array([
+            [self.L / 2],
+            [0],
+            [0],
+            [self.L / 2],
+            [0],
+            [0]
+        ])
 
-        self.UDL_forces = self.assembly_mat @ self.UDL_F_eq
+        self.UDL_f_shear *= shear_mag
+        self.UDL_f_axial *= axial_mag
+
+        self.UDL_F_shear = self.lambda_mat.T @ self.UDL_f_shear
+        self.UDL_F_axial = self.lambda_mat.T @ self.UDL_f_axial
+
+        self.UDL_forces = self.assembly_mat @ (self.UDL_F_shear + self.UDL_F_axial)
 
 
     def _LVL_forces(self) -> None:
@@ -209,19 +229,35 @@ class Element():
 
         if(self.LVL == 0):
             return
+        
+        shear_mag = self.LVL * np.cos(np.deg2rad(self.angle))
+        axial_mag = self.LVL * np.sin(np.deg2rad(self.angle))
 
-        self.LVL_f_eq = np.array([
+        self.LVL_f_shear = np.array([
             [0],
-            [3 * self.LVL * self.L / 20],
-            [self.LVL * self.L ** 2 / 30],
+            [3 * self.L / 20],
+            [self.L ** 2 / 30],
             [0],
-            [7 * self.LVL * self.L / 20],
-            [-self.LVL * self.L ** 2 / 20]
+            [7 * self.L / 20],
+            [-self.L ** 2 / 20]
         ])
 
-        self.LVL_F_eq = self.lambda_mat.T @ self.LVL_f_eq
+        self.LVL_f_axial = np.array([
+            [self.L / 2],
+            [0],
+            [0],
+            [self.L / 2],
+            [0],
+            [0]
+        ])
 
-        self.LVL_forces = self.assembly_mat @ self.LVL_F_eq
+        self.LVL_f_shear *= shear_mag
+        self.LVL_f_axial *= axial_mag
+
+        self.LVL_F_shear = self.lambda_mat.T @ self.LVL_f_shear
+        self.LVL_F_axial = self.lambda_mat.T @ self.LVL_f_axial
+
+        self.LVL_forces = self.assembly_mat @ (self.LVL_F_shear + self.LVL_f_axial)
 
 
     def _point_load_forces(self) -> None:

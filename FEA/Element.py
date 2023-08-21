@@ -461,5 +461,5 @@ class Element():
         x_deflected = x_undeflected + deflections_XG * displacement_magnitude
         y_deflected = y_undeflected + deflections_YG * displacement_magnitude
 
-        plt.plot(x_undeflected, y_undeflected, 'b.-', label="Undeflected")
-        plt.plot(x_deflected, y_deflected, 'r.-', label="Deflected")
+        plt.plot(x_undeflected, y_undeflected, 'b', label="Undeflected")
+        plt.plot(x_deflected, y_deflected, 'r', label="Deflected")

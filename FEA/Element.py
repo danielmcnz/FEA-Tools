@@ -73,8 +73,6 @@ class Element():
         None
         """
         
-        super().__init__()
-        
         self.E : int = E
         self.I : int = I
         self.L : int = L

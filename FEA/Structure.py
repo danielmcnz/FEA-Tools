@@ -99,6 +99,8 @@ class Structure:
         for element in self.elements:
             element.calculate_force_vector(self.q)
 
+        np.set_printoptions(formatter={'float': '{:0.5e}'.format})
+
 
     def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
         """

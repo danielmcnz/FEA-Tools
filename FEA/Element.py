@@ -39,7 +39,7 @@ class Element():
         calculates the lambda matrix
     """
      
-    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : int = 0, LVL : int = 0, point_load : tuple = (0, 0, 0, 1, 1)):
+    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : tuple = (0, 1, 1), LVL : tuple = (0, 1, 1), point_load : tuple = (0, 0, 0, 1, 1)):
         """
         Parameters
         ----------
@@ -82,15 +82,17 @@ class Element():
         self.point_load : tuple = point_load
 
         self.UDL_forces : np.ndarray        = None
+        self.UDL_f_shear : np.ndarray       = None
+        self.UDL_f_axial : np.ndarray       = None
         self.UDL_F_shear : np.ndarray       = None
         self.UDL_F_axial : np.ndarray       = None
-        self.UDL_F_shear : np.ndarray       = None
-        self.UDL_F_axial : np.ndarray       = None
+
         self.LVL_forces : np.ndarray        = None
         self.LVL_f_shear : np.ndarray       = None
-        self.LVL_f_shear : np.ndarray       = None
+        self.LVL_f_axial : np.ndarray       = None
         self.LVL_F_axial : np.ndarray       = None
-        self.LVL_F_axial : np.ndarray       = None
+        self.LVL_F_shear : np.ndarray       = None
+
         self.point_load_forces : np.ndarray = None
         self.PL_f_shear : np.ndarray        = None
         self.PL_f_axial : np.ndarray        = None
@@ -187,9 +189,13 @@ class Element():
 
         if(self.UDL == 0):
             return
+
+        udl = self.UDL[0]
+        x_sign = self.UDL[1]
+        y_sign = self.UDL[2]
         
-        shear_mag = self.UDL * np.cos(np.deg2rad(self.angle))
-        axial_mag = self.UDL * np.sin(np.deg2rad(self.angle))
+        shear_mag = x_sign * udl * np.sin(np.deg2rad(self.angle))
+        axial_mag = y_sign * udl * np.cos(np.deg2rad(self.angle))
 
         self.UDL_f_shear = np.array([
             [0],
@@ -229,9 +235,13 @@ class Element():
 
         if(self.LVL == 0):
             return
-        
-        shear_mag = self.LVL * np.cos(np.deg2rad(self.angle))
-        axial_mag = self.LVL * np.sin(np.deg2rad(self.angle))
+
+        lvl = self.LVL[0]
+        x_sign = self.LVL[1]
+        y_sign = self.LVL[2]        
+
+        shear_mag = x_sign * lvl * np.sin(np.deg2rad(self.angle))
+        axial_mag = y_sign * lvl * np.cos(np.deg2rad(self.angle))
 
         self.LVL_f_shear = np.array([
             [0],
@@ -257,7 +267,7 @@ class Element():
         self.LVL_F_shear = self.lambda_mat.T @ self.LVL_f_shear
         self.LVL_F_axial = self.lambda_mat.T @ self.LVL_f_axial
 
-        self.LVL_forces = self.assembly_mat @ (self.LVL_F_shear + self.LVL_f_axial)
+        self.LVL_forces = self.assembly_mat @ (self.LVL_F_shear + self.LVL_F_axial)
 
 
     def _point_load_forces(self) -> None:

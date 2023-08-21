@@ -55,10 +55,14 @@ class Element():
             The cross-sectional area of the element.
         angle : int
             The angle of the element.
-        UDL : int
+        UDL : tuple
             The uniform distributed load if present on the element.
-        LVL : int
+            
+            format : (magnitude of load, x sign, y sign)
+        LVL : tuple
             The linearly distributed load if present on the element.
+
+            format : (magnitude of load, x sign, y sign)
         point_load : tuple
             The point load if present on the element.
             
@@ -401,6 +405,17 @@ class Element():
 
     def calculate_deflections(self, x) -> np.ndarray:
         """
+        Calculates the Xg and Yg global deflections of an element.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            The x values to calculate the deflections at (can be single value, or array).
+
+        Returns
+        -------
+        np.ndarray
+            The Xg and Yg global deflections.
         """
 
         phi_1 = (1 - x / self.L)

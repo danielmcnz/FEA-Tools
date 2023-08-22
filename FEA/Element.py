@@ -58,15 +58,15 @@ class Element():
         UDL : tuple
             The uniform distributed load if present on the element.
             
-            format : (angle from perpendicular of surface (CCW), magnitude of load, shear sign (inverse to local element), axial sign (inverse to local element))
+            format : (angle of horizontal of element to horizontal of UDL (CCW), magnitude of load, x sign, y sign)
         LVL : tuple
             The linearly distributed load if present on the element.
 
-            format : (angle from perpendicular of surface (CCW), magnitude of load, shear sign (inverse to local element), axial sign (inverse to local element))
+            format : (angle of horizontal of element to horizontal of LVL  (CCW), magnitude of load, x sign, y sign)
         point_load : tuple
             The point load if present on the element.
             
-            format : (distance from node 1 (a), angle from perpendicular of surface (CCW), magnitude of load, shear sign (inverse to local element), axial sign (inverse to local element))
+            format : (distance from node 1 (a), angle of horizontal of element to horizontal of PL (CCW), magnitude of load, x sign, y sign)
 
             More comments on angle: get the x and y with the point load directions, then draw triangle with point load and direction.
             This will give the +ve angle within this triangle

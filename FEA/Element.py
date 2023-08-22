@@ -39,7 +39,7 @@ class Element():
         calculates the lambda matrix
     """
      
-    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : tuple = (0, 1, 1), LVL : tuple = (0, 1, 1), point_load : tuple = (0, 0, 0, 1, 1)):
+    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : tuple = (0, 0, 1, 1), LVL : tuple = (0, 0, 1, 1), point_load : tuple = (0, 0, 0, 1, 1)):
         """
         Parameters
         ----------
@@ -58,16 +58,18 @@ class Element():
         UDL : tuple
             The uniform distributed load if present on the element.
             
-            format : (magnitude of load, x sign, y sign)
+            format : (angle from perpendicular of surface (CCW), magnitude of load, shear sign (inverse to local element), axial sign (inverse to local element))
         LVL : tuple
             The linearly distributed load if present on the element.
 
-            format : (magnitude of load, x sign, y sign)
+            format : (angle from perpendicular of surface (CCW), magnitude of load, shear sign (inverse to local element), axial sign (inverse to local element))
         point_load : tuple
             The point load if present on the element.
             
-            format : (distance from node 1 (a), angle of load from element surface perpendicular CCW, magnitude of load, x sign, y sign)
+            format : (distance from node 1 (a), angle from perpendicular of surface (CCW), magnitude of load, shear sign (inverse to local element), axial sign (inverse to local element))
 
+            More comments on angle: get the x and y with the point load directions, then draw triangle with point load and direction.
+            This will give the +ve angle within this triangle
         Returns
         -------
         None
@@ -192,12 +194,13 @@ class Element():
         if(self.UDL == 0):
             return
 
-        udl = self.UDL[0]
-        x_sign = self.UDL[1]
-        y_sign = self.UDL[2]
+        angle = self.UDL[0]
+        udl = self.UDL[1]
+        shear_sign = self.UDL[2]
+        axial_sign = self.UDL[3]
         
-        shear_mag = x_sign * udl * np.sin(np.deg2rad(self.angle))
-        axial_mag = y_sign * udl * np.cos(np.deg2rad(self.angle))
+        shear_mag = shear_sign * udl * np.cos(np.deg2rad(angle))
+        axial_mag = axial_sign * udl * np.sin(np.deg2rad(angle))
 
         self.UDL_f_shear = np.array([
             [0],
@@ -238,12 +241,13 @@ class Element():
         if(self.LVL == 0):
             return
 
-        lvl = self.LVL[0]
-        x_sign = self.LVL[1]
-        y_sign = self.LVL[2]        
+        angle = self.LVL[0]
+        lvl = self.LVL[1]
+        shear_sign = self.LVL[2]
+        axial_sign = self.LVL[3]        
 
-        shear_mag = x_sign * lvl * np.sin(np.deg2rad(self.angle))
-        axial_mag = y_sign * lvl * np.cos(np.deg2rad(self.angle))
+        shear_mag = shear_sign * lvl * np.cos(np.deg2rad(angle))
+        axial_mag = axial_sign * lvl * np.sin(np.deg2rad(angle))
 
         self.LVL_f_shear = np.array([
             [0],

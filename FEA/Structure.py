@@ -1,8 +1,9 @@
 import numpy as np
-from typing import Any, List
+from typing import List, Dict
 import matplotlib.pyplot as plt
 
-from FEA.Element import Element
+from FEA.Element import Element, Node, GLOB_DOF
+from FEA.Supports import Support
 
 
 class Structure:
@@ -13,6 +14,7 @@ class Structure:
     ----------
     elements : List[Element]
         The list of elements in the structure.
+    
     external_force_vector : np.ndarray
         The external force vector for the structure.
     q : np.ndarray
@@ -26,12 +28,14 @@ class Structure:
         Solves for the structure elements and finds the force vectors locally and globally.
     """
 
-    def __init__(self, elements : List[Element], external_force_vector : np.ndarray) -> None:
+    def __init__(self, elements : List[Element], supports : List[Support], external_force_vector : np.ndarray) -> None:
         """
         Parameters
         ----------
         elements : List[Element]
             The list of elements in the structure.
+        supports : List[Support]
+            The list of supports in the structure.
         external_force_vector : np.ndarray
             The external force vector for the structure.
             
@@ -39,13 +43,44 @@ class Structure:
         -------
         None
         """
+
+        GLOB_DOF.cur_index = 0
         
         self.elements : List[Element] = elements
+        self.supports : List[Support] = supports
         self.external_force_vector : np.ndarray = external_force_vector.astype(np.float64)
         self.total_stiffness : np.ndarray = None
 
         # equation for motions from K_g * q = F
         self.q : np.ndarray = None
+
+    
+    def _calculate_asm_mats(self):
+        dofs : List[Node] = []
+        n_dofs : int = 0
+        for element in self.elements:
+            element._find_nodes(self.supports)
+
+            for node in element.nodes:
+                if node not in dofs:
+                    dofs.append(node)
+                    n_dofs += node.x.value + node.y.value + node.moment.value
+
+        for node in dofs:
+            for dof in node:
+                if(dof.value):
+                    dof.assign_dof_index()
+                
+        # this is very scuffed, need to optimise this
+        for i in range(len(self.elements)):
+            for j in range(len(self.elements[i].nodes)):
+                if self.elements[i].nodes[j] not in dofs:
+                    for n in dofs:
+                        if n.pos == self.elements[i].nodes[j].pos:
+                            self.elements[i].nodes[j] = n
+        
+        for element in self.elements:
+            element._calculate_asm_mat(n_dofs)
 
 
     def _solve_EOM(self, K_g : np.ndarray) -> np.ndarray:
@@ -80,6 +115,8 @@ class Structure:
         None
         """
 
+        self._calculate_asm_mats()
+
         self.total_stiffness : np.ndarray = np.zeros((self.external_force_vector.shape[0], self.external_force_vector.shape[0]))
 
         for element in self.elements:
@@ -102,7 +139,7 @@ class Structure:
         np.set_printoptions(formatter={'float': '{:0.5e}'.format})
 
 
-    def plot_structure(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
+    def plot_structure(self, displacement_magnitude : int, resolution : int) -> None:
         """
         Plots the structure.
 
@@ -123,7 +160,7 @@ class Structure:
         i = 0
 
         for element in self.elements:
-            element.plot_element(nodes[i], displacement_magnitude, resolution)
+            element.plot_element(displacement_magnitude, resolution)
             i += 1
 
         handles, labels = plt.gca().get_legend_handles_labels()

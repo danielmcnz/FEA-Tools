@@ -1,5 +1,83 @@
+from __future__ import annotations
+
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import List
+
+from FEA.Supports import Support
+from FEA.Vector import Vec2
+
+class GLOB_DOF:
+    cur_index : int = 0
+
+    def __init__(self, value : int = 1):
+        self.value : int = value
+
+        self.index = -1
+
+    def assign_dof_index(self):
+        self.index = GLOB_DOF.cur_index
+        GLOB_DOF.cur_index += 1
+
+
+    def __add__(self, other : GLOB_DOF) -> int:
+        return self.value + other.value
+
+    
+    def __add__(self, other : GLOB_DOF) -> int:
+        return self.value - other.value
+    
+
+    def __eq__(self, other : GLOB_DOF):
+        return self.value == other.value and self.index == other.index
+
+
+    def __call__(self) -> int:
+        return self.value
+    
+    
+    def __str__(self) -> str:
+        return "N/A" if self.value == 0 else str(self.index)
+    
+
+class Node():
+    def __init__(self, pos : Vec2, x : GLOB_DOF, y : GLOB_DOF, moment : GLOB_DOF):
+        self.pos : Vec2 = pos
+        self.x : GLOB_DOF = x
+        self.y : GLOB_DOF = y
+        self.moment : GLOB_DOF = moment
+        
+
+    
+    def __str__(self):
+        return "Node -> pos: " + str(self.pos) + " dof: (" + str(self.x) + ", " + str(self.y) + ", " + str(self.moment) + ")"
+
+
+    def __iter__(self):
+        self._iter_list = [self.x, self.y, self.moment]
+        return iter(self._iter_list)
+    
+
+    def __next__(self):
+        return next(self._iter_list)
+
+
+    def __eq__(self, other : Node):
+        if isinstance(other, Node):
+            return self.pos == other.pos and self.x == other.x and self.y == other.y and self.moment == other.moment
+        return False
+    
+
+    def __hash__(self) -> int:
+        return hash((self.pos, self.x, self.y, self.moment))
+
+
+    def __bool__(self, other : Node):
+        return self.__eq__(self, other)
+
+    
+    def to_global(self):
+        pass
 
 
 class Element():
@@ -39,7 +117,7 @@ class Element():
         calculates the lambda matrix
     """
      
-    def __init__(self, assembly_mat : np.ndarray, E : int, I : int, L : int, A : int, angle : int, UDL : tuple = (0, 0, 1, 1), LVL : tuple = (0, 0, 1, 1), point_load : tuple = (0, 0, 0, 1, 1)):
+    def __init__(self, node_pos : List[Vec2], E : int, I : int, L : int, A : int, angle : int, UDL : tuple = (0, 0, 1, 1), LVL : tuple = (0, 0, 1, 1), point_load : tuple = (0, 0, 0, 1, 1)):
         """
         Parameters
         ----------
@@ -74,6 +152,10 @@ class Element():
         -------
         None
         """
+
+        self.node_pos : List[Vec2] = node_pos
+        self.nodes : List[Node] = [None, None]
+        self.n_element_dofs : int = 6
         
         self.E : int = E
         self.I : int = I
@@ -103,7 +185,7 @@ class Element():
         self.PL_F_shear : np.ndarray        = None
         self.PL_F_axial : np.ndarray        = None
 
-        self.assembly_mat : np.ndarray = assembly_mat
+        self.assembly_mat : np.ndarray = None
 
         self.lambda_mat : np.ndarray            = None
 
@@ -119,6 +201,37 @@ class Element():
         self.structural_deflections : np.ndarray    = None
 
     
+    def _find_nodes(self, supports : List[Support]) -> np.ndarray:
+
+        for support in supports:
+            if support.pos == self.node_pos[0]:
+                self.nodes[0] = Node(self.node_pos[0], GLOB_DOF(support.x_dof), GLOB_DOF(support.y_dof), GLOB_DOF(support.moment_dof))
+            if support.pos == self.node_pos[1]:
+                self.nodes[1] = Node(self.node_pos[1], GLOB_DOF(support.x_dof), GLOB_DOF(support.y_dof), GLOB_DOF(support.moment_dof))
+
+        for i in range(len(self.nodes)):
+            if self.nodes[i] is None:
+                self.nodes[i] = Node(self.node_pos[i], GLOB_DOF(), GLOB_DOF(), GLOB_DOF())
+                
+
+
+    def _calculate_asm_mat(self, n_structure_dofs : int):
+        self.assembly_mat = np.zeros((n_structure_dofs, self.n_element_dofs), dtype=np.int32)
+
+        for i in range(len(self.nodes)):
+            index = i * 3
+
+            if index <= self.n_element_dofs:
+                if self.nodes[i].x.index >= 0:
+                    self.assembly_mat[self.nodes[i].x.index][index] = self.nodes[i].x.value
+
+                if self.nodes[i].y.index >= 0:
+                    self.assembly_mat[self.nodes[i].y.index][index+1] = self.nodes[i].y.value
+                    
+                if self.nodes[i].moment.index >= 0:
+                    self.assembly_mat[self.nodes[i].moment.index][index+2] = self.nodes[i].moment.value
+
+
     def _to_local(self) -> np.ndarray:
         """
         creates the local stiffness matrix for an element
@@ -437,7 +550,7 @@ class Element():
         return np.array([deflections_XG, deflections_YG])
 
 
-    def plot_element(self, nodes : np.ndarray, displacement_magnitude : int, resolution : int) -> None:
+    def plot_element(self, displacement_magnitude : int, resolution : int) -> None:
         """
         Plots the element in both deflected and undeflected form.
 
@@ -459,8 +572,8 @@ class Element():
 
         deflections_XG, deflections_YG = self.calculate_deflections(x)
 
-        x_undeflected = np.linspace(nodes[0][0], nodes[1][0], resolution)
-        y_undeflected = np.linspace(nodes[0][1], nodes[1][1], resolution)
+        x_undeflected = np.linspace(self.nodes[0].pos.x, self.nodes[1].pos.x, resolution)
+        y_undeflected = np.linspace(self.nodes[0].pos.y, self.nodes[1].pos.y, resolution)
 
         x_deflected = x_undeflected + deflections_XG * displacement_magnitude
         y_deflected = y_undeflected + deflections_YG * displacement_magnitude

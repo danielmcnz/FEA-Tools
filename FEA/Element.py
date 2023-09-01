@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from typing import List
 
 from FEA.Supports import Support
 from FEA.Vector import Vec2
+
 
 class GLOB_DOF:
     cur_index : int = 0
@@ -80,7 +82,7 @@ class Node():
         pass
 
 
-class Element():
+class Element:
     """
     An element for FEA analysis.
 
@@ -116,6 +118,8 @@ class Element():
     get_lambda_mat(angle)
         calculates the lambda matrix
     """
+
+    element_index : int = 0
      
     def __init__(self, node_pos : List[Vec2], E : int, I : int, L : int, A : int, angle : int, UDL : tuple = (0, 0, 1, 1), LVL : tuple = (0, 0, 1, 1), point_load : tuple = (0, 0, 0, 1, 1)):
         """
@@ -152,6 +156,10 @@ class Element():
         -------
         None
         """
+        Element.element_index += 1
+
+        self.id : int = Element.element_index
+        
 
         self.node_pos : List[Vec2] = node_pos
         self.nodes : List[Node] = [None, None]
@@ -548,6 +556,167 @@ class Element():
         deflections_YG = element_axial_displacement * np.sin(np.deg2rad(self.angle)) + element_transverse_displacement * np.cos(np.deg2rad(self.angle))
 
         return np.array([deflections_XG, deflections_YG])
+    
+
+    def plot_DOF(self) -> None:
+        """
+        """
+
+        font_size = 20
+
+        width = 16
+        height = 9
+
+        fig, ax = plt.subplots(figsize=(width, height))
+
+        ax.plot([self.nodes[0].pos.x, self.nodes[1].pos.x], [self.nodes[0].pos.y, self.nodes[1].pos.y], 'b')
+
+        arrow_space_from_element = Vec2(0.15, 0.15)
+        arrow_len = 0.5
+        
+        kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
+
+        # ------------------------------- #
+        #   plot element no. and angle    #
+        # ------------------------------- #
+
+        mid_point = (self.nodes[1].pos + self.nodes[0].pos) / 2
+
+        ax.annotate(f"element {self.id}", xy=(mid_point.x, mid_point.y), xytext=(-110, 170), textcoords='offset points', color='black', fontsize=font_size)
+        ax.annotate(f"$\u03B1^{self.id}$={str(self.angle)}", xy=(mid_point.x, mid_point.y), xytext=(-110, 150), textcoords='offset points', color='black', fontsize=font_size)
+
+        # ------------------------------- #
+
+        # ------------------------------- #
+        #  Plot local coordinate system   #
+        # ------------------------------- #
+
+        start_point = self.nodes[0].pos
+        end_point = self.nodes[1].pos
+
+        # Calculate the direction vector of the element
+        direction = end_point - start_point
+
+        midpoint = (end_point - start_point).abs() / 2
+        midpoint.x += min(start_point.x, end_point.x)
+        midpoint.y += min(start_point.y, end_point.y)
+
+        # Normalize the direction vector
+        normalized_direction = direction.normalize()
+
+        # Calculate the perpendicular vector for the local y-axis
+        perpendicular = normalized_direction.perpendicular()
+
+        midpoint += Vec2(0.15, 0.15) * perpendicular
+
+        # Calculate the coordinates for the local axes
+        start_x_axis = (midpoint.x, midpoint.y)
+        end_x_axis = (midpoint.x + arrow_len * normalized_direction.x,
+                        midpoint.y + arrow_len * normalized_direction.y)
+        start_y_axis = (midpoint.x, midpoint.y)
+        end_y_axis = (midpoint.x + arrow_len * perpendicular.x,
+                        midpoint.y + arrow_len * perpendicular.y)
+
+        arrow_x = patches.FancyArrowPatch(
+            start_x_axis, 
+            end_x_axis, 
+            **kw
+        )
+
+        arrow_y = patches.FancyArrowPatch(
+            start_y_axis, 
+            end_y_axis,
+            **kw
+        )
+
+        ax.annotate("$x^e$", xy=end_x_axis, xytext=(5, 0), textcoords='offset points', color='black', fontsize=font_size)
+        ax.annotate("$y^e$", xy=end_y_axis, xytext=(0, 5), textcoords='offset points', color='black', fontsize=font_size)
+
+        ax.add_patch(arrow_x)
+        ax.add_patch(arrow_y)
+        
+        # ------------------------------- #
+
+
+        # ------------------------------- #
+        # Plot degrees of freedom arrows  #
+        # ------------------------------- #
+
+        for i in range(len(self.nodes)):
+            p_dist = (self.nodes[i].pos - self.nodes[1-i].pos).normalize()
+
+            p : Vec2 = self.nodes[i].pos
+
+            x_init : float = p.x
+            y_init : float = p.y
+
+            if self.nodes[i].pos.x > self.nodes[1-i].pos.x:
+                x_init += arrow_space_from_element.x
+            else:
+                x_init -= arrow_len + arrow_space_from_element.x
+
+            if self.nodes[i].pos.y > self.nodes[1-i].pos.y:
+                y_init = p.y + arrow_space_from_element.y
+            else:
+                y_init = p.y
+
+            if self.nodes[i].x:
+                a = patches.FancyArrowPatch(
+                    (x_init, y_init), 
+                    (x_init + arrow_len, y_init),
+                    **kw
+                )
+
+                ax.annotate("D"+str(i*2+(i+1)), xy=(x_init + arrow_len, y_init), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
+
+                plt.gca().add_patch(a)
+
+            if self.nodes[i].y:
+
+                a = patches.FancyArrowPatch(
+                    (x_init, y_init), 
+                    (x_init, y_init + arrow_len), 
+                    **kw
+                )
+
+                ax.annotate("D"+str(i*2+(i+2)), xy=(x_init, y_init + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
+
+                plt.gca().add_patch(a)
+
+            if self.nodes[i].moment:
+                center = (x_init, y_init)
+                radius = 0.2
+
+                start_angle = 0
+                end_angle = 270  # 3/4 of a full circle
+
+                arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
+                                linewidth=2, color='black')
+
+                # Calculate the coordinates of the end point of the arc
+                end_angle_rad = np.radians(end_angle)
+                end_x = center[0] + radius * np.cos(end_angle_rad)
+                end_y = center[1] + radius * np.sin(end_angle_rad)
+
+                # Create an arrow patch at the end of the arc
+                arrow = patches.FancyArrowPatch(
+                    (end_x - 0.01, end_y), 
+                    (end_x + 0.05, end_y),
+                    **kw
+                )
+
+                ax.annotate("D"+str(i*2+(i+3)), xy=(end_x - 0.05, end_y), xytext=(0, -20), textcoords='offset points', color='black', fontsize=font_size)
+
+                plt.gca().add_patch(arc)
+                plt.gca().add_patch(arrow)
+            
+        # ------------------------------- #
+
+        ax.axis('off')
+        ax.axis('equal')
+
+        plt.show()
+
 
 
     def plot_element(self, displacement_magnitude : int, resolution : int) -> None:

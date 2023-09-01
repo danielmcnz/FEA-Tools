@@ -4,10 +4,10 @@ import math
 
 class Vec2:
     def __init__(self, x, y):
-        self.x : float = x
-        self.y : float = y
+        self.x : float = float(x)
+        self.y : float = float(y)
 
-        self.length : float
+        self.length : float = math.sqrt(self.x ** 2 + self.y ** 2)
 
 
     def __repr__(self):
@@ -27,24 +27,78 @@ class Vec2:
 
 
     def __add__(self, other : Vec2):
-        return Vec2(self.x + other.x, self.y * other.y)
+        return Vec2(self.x + other.x, self.y + other.y)
     
 
     def __sub__(self, other : Vec2):
-        return Vec2(self.x + other.x, self.y * other.y)
+        return Vec2(self.x - other.x, self.y - other.y)
 
 
-    def __mul__(self, other : Vec2):
-        return Vec2(self.x * other.x, self.y * other.y)
+    def __mul__(self, other):
 
+        if type(other) == Vec2:
+            return Vec2(self.x * other.x, self.y * other.y)
+        elif type(other) == int or type(other) == float:
+            return Vec2(other * self.x, other * self.y)
+        
 
-    def __div__(self, other : Vec2):
-        if(other.x or other.y == 0):
-            raise ZeroDivisionError("Cannot divide by zero")
-        return Vec2(self.x / other.x, self.y / other.y)
+    def __ge__(self, other : Vec2):
+        return Vec2(self.x >= other.x, self.y >= other.y)
+    
+    
+    def __gt__(self, other : Vec2):
+        return Vec2(self.x > other.x, self.y > other.y)
     
 
-    def normalize(self):
-        self.length = math.sqrt(self.x ** 2 + self.y ** 2)
-        self.x /= self.length
-        self.y /= self.length
+    def __le__(self, other : Vec2):
+        return Vec2(self.x <= other.x, self.y <= other.y)
+    
+
+    def __lt__(self, other : Vec2):
+        return Vec2(self.x < other.x, self.y < other.y)
+
+
+    def __truediv__(self, other):
+        if type(other) == Vec2:
+            if (self.x != 0 and other.x == 0) or (self.y != 0 and other.y == 0):
+                raise ZeroDivisionError("Cannot divide by zero")
+            
+            if other.x == 0:
+                x = 0
+            else:
+                x = self.x / other.x
+            if other.y == 0:
+                y = 0
+            else:
+                y = self.y / other.y
+            return Vec2(x, y)
+        
+        elif type(other) == int or type(other) == float:
+            if other == 0 and self.x != 0:
+                raise ZeroDivisionError("Cannot divide by zero")
+            return Vec2(self.x / other, self.y / other)
+    
+
+    def abs(self):
+        return Vec2(abs(self.x), abs(self.y))
+    
+
+    def normalize(self) -> Vec2:
+
+        if(self.x == 0 and self.y == 0):
+            length = 0
+            x = 0
+            y = 0
+        else:
+            length = math.sqrt(self.x ** 2 + self.y ** 2)
+            x = self.x / length
+            y = self.y / length
+
+        vec = Vec2(x, y)
+        vec.length = length
+
+        return vec
+
+
+    def perpendicular(self):
+        return Vec2(-self.y, self.x)

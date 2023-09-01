@@ -45,11 +45,15 @@ class Structure:
         """
 
         GLOB_DOF.cur_index = 0
+        Element.element_index = 0
         
         self.elements : List[Element] = elements
         self.supports : List[Support] = supports
         self.external_force_vector : np.ndarray = external_force_vector.astype(np.float64)
         self.total_stiffness : np.ndarray = None
+
+        # for i in range(len(self.elements)):
+        #     self.elements[i].set_index(i+1)
 
         # equation for motions from K_g * q = F
         self.q : np.ndarray = None
@@ -168,6 +172,4 @@ class Structure:
 
         plt.grid()
         plt.legend(by_label.values(), by_label.keys())
-        plt.show()
-
         plt.show()

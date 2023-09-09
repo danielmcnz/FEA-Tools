@@ -1,9 +1,11 @@
 import numpy as np
 from typing import List, Dict
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
-from FEA.Element import Element, Node, GLOB_DOF
-from FEA.Supports import Support
+from .Element import Element, Node, GLOB_DOF
+from .Supports import Support
+from .Vector import Vec2
 
 
 class Structure:
@@ -28,7 +30,7 @@ class Structure:
         Solves for the structure elements and finds the force vectors locally and globally.
     """
 
-    def __init__(self, elements : List[Element], supports : List[Support], external_force_vector : np.ndarray) -> None:
+    def __init__(self, elements : List[Element], supports : List[Support], Q : np.ndarray = None) -> None:
         """
         Parameters
         ----------
@@ -44,33 +46,32 @@ class Structure:
         None
         """
 
-        GLOB_DOF.cur_index = 0
-        Element.element_index = 0
+        self.global_nodes : List[Node] = []
+        self.n_dofs : int = 0
+
+        self._original_Q = Q
         
         self.elements : List[Element] = elements
         self.supports : List[Support] = supports
-        self.external_force_vector : np.ndarray = external_force_vector.astype(np.float64)
+        self.Q : np.ndarray = None
         self.total_stiffness : np.ndarray = None
 
-        # for i in range(len(self.elements)):
-        #     self.elements[i].set_index(i+1)
-
-        # equation for motions from K_g * q = F
         self.q : np.ndarray = None
+
+        self.solve()
 
     
     def _calculate_asm_mats(self):
-        dofs : List[Node] = []
-        n_dofs : int = 0
+        self.n_dofs = 0
         for element in self.elements:
             element._find_nodes(self.supports)
 
             for node in element.nodes:
-                if node not in dofs:
-                    dofs.append(node)
-                    n_dofs += node.x.value + node.y.value + node.moment.value
+                if node not in self.global_nodes:
+                    self.global_nodes.append(node)
+                    self.n_dofs += node.x.value + node.y.value + node.moment.value
 
-        for node in dofs:
+        for node in self.global_nodes:
             for dof in node:
                 if(dof.value):
                     dof.assign_dof_index()
@@ -78,13 +79,13 @@ class Structure:
         # this is very scuffed, need to optimise this
         for i in range(len(self.elements)):
             for j in range(len(self.elements[i].nodes)):
-                if self.elements[i].nodes[j] not in dofs:
-                    for n in dofs:
+                if self.elements[i].nodes[j] not in self.global_nodes:
+                    for n in self.global_nodes:
                         if n.pos == self.elements[i].nodes[j].pos:
                             self.elements[i].nodes[j] = n
         
         for element in self.elements:
-            element._calculate_asm_mat(n_dofs)
+            element._calculate_asm_mat(self.n_dofs)
 
 
     def _solve_EOM(self, K_g : np.ndarray) -> np.ndarray:
@@ -102,10 +103,10 @@ class Structure:
             The solution to the equation of motion.
         """
 
-        if(self.external_force_vector.shape != (K_g.shape[0], 1)):
+        if(self.Q.shape != (K_g.shape[0], 1)):
             raise ValueError("external_force_vector must be a column vector of size K_g.shape[0]")
 
-        self.q = np.linalg.solve(K_g, self.external_force_vector)
+        self.q = np.linalg.solve(K_g, self.Q)
 
         return self.q
     
@@ -118,10 +119,22 @@ class Structure:
         -------
         None
         """
+        
+        GLOB_DOF.cur_index = 0
+        Element.element_index = 0
+
+        self.Q = self._original_Q
+
+        self.global_nodes.clear()
+        
 
         self._calculate_asm_mats()
 
-        self.total_stiffness : np.ndarray = np.zeros((self.external_force_vector.shape[0], self.external_force_vector.shape[0]))
+        if self._original_Q is None:
+            self._original_Q = np.zeros((self.n_dofs, 1))
+        self.Q = self._original_Q.astype(np.float64)
+
+        self.total_stiffness : np.ndarray = np.zeros((self.Q.shape[0], self.Q.shape[0]))
 
         for element in self.elements:
             element.calculate_global_stiffness()
@@ -129,21 +142,20 @@ class Structure:
 
         for element in self.elements:
             if(element.UDL_forces is not None):
-                self.external_force_vector += element.UDL_forces
+                self.Q += element.UDL_forces
             if(element.LVL_forces is not None):
-                self.external_force_vector += element.LVL_forces
+                self.Q += element.LVL_forces
             if(element.point_load_forces is not None):
-                self.external_force_vector += element.point_load_forces
+                self.Q += element.point_load_forces
 
         self._solve_EOM(self.total_stiffness)
 
         for element in self.elements:
             element.calculate_force_vector(self.q)
+            element.calculate_stresses_and_strains()
 
-        np.set_printoptions(formatter={'float': '{:0.5e}'.format})
 
-
-    def plot_structure(self, displacement_magnitude : int, resolution : int) -> None:
+    def plot_structure(self, displacement_magnitude : int, resolution : int, deflections : int = False, annotations : int = False, width : int = 15, height : int = 5, external_deflections : np.ndarray = None) -> None:
         """
         Plots the structure.
 
@@ -163,13 +175,100 @@ class Structure:
 
         i = 0
 
+        fig, axes = plt.subplots(figsize=(width, height))
+
         for element in self.elements:
-            element.plot_element(displacement_magnitude, resolution)
+            element.plot_element(displacement_magnitude, resolution, axes, deflections, external_deflections)
             i += 1
 
-        # handles, labels = axes.gca().get_legend_handles_labels()
-        # by_label = dict(zip(labels, handles))
+        if deflections:
+            handles, labels = plt.gca().get_legend_handles_labels()
+            by_label = dict(zip(labels, handles))
 
-        plt.grid()
-        plt.legend(by_label.values(), by_label.keys())
+            axes.legend(by_label.values(), by_label.keys())
+
+
+        if annotations:
+            font_size = 10
+
+            arrow_space_from_element = Vec2(0.01, 0.05)
+            arrow_len = 0.5
+            
+            kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
+
+
+            for element in self.elements:
+                mid_point = (element.nodes[1].pos + element.nodes[0].pos) / 2
+                axes.annotate(f"E{element.id}", xy=(mid_point.x, mid_point.y), xytext=(-10, 10), textcoords='offset points', color='black', fontsize=font_size)
+            
+
+
+            # ------------------------------- #
+            # Plot degrees of freedom arrows  #
+            # ------------------------------- #
+
+            for i in range(len(self.global_nodes)):
+                # p_dist = (self.global_nodes[i].pos - self.global_nodes[1-i].pos).normalize()
+
+                p : Vec2 = self.global_nodes[i].pos
+
+                x_init : float = p.x + arrow_space_from_element.x
+                y_init : float = p.y + arrow_space_from_element.y
+
+                if self.global_nodes[i].x.index >= 0:
+                    a = patches.FancyArrowPatch(
+                        (x_init, y_init), 
+                        (x_init + arrow_len, y_init),
+                        **kw
+                    )
+
+                    axes.annotate("Q"+str(self.global_nodes[i].x.index+1), xy=(x_init + arrow_len, y_init), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
+
+                    plt.gca().add_patch(a)
+
+                if self.global_nodes[i].y.index >= 0:
+
+                    a = patches.FancyArrowPatch(
+                        (x_init, y_init), 
+                        (x_init, y_init + arrow_len), 
+                        **kw
+                    )
+
+                    axes.annotate("Q"+str(self.global_nodes[i].y.index+1), xy=(x_init, y_init + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
+
+                    plt.gca().add_patch(a)
+
+                if self.global_nodes[i].moment.index >= 0:
+                    center = (x_init, y_init)
+                    radius = 0.2
+
+                    start_angle = 0
+                    end_angle = 270  # 3/4 of a full circle
+
+                    arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
+                                    linewidth=2, color='black')
+
+                    # Calculate the coordinates of the end point of the arc
+                    end_angle_rad = np.radians(end_angle)
+                    end_x = center[0] + radius * np.cos(end_angle_rad)
+                    end_y = center[1] + radius * np.sin(end_angle_rad)
+
+                    # Create an arrow patch at the end of the arc
+                    arrow = patches.FancyArrowPatch(
+                        (end_x - 0.01, end_y), 
+                        (end_x + 0.05, end_y),
+                        **kw
+                    )
+
+                    
+                    axes.annotate("Q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(0, -20), textcoords='offset points', color='black', fontsize=font_size)
+
+                    plt.gca().add_patch(arc)
+                    plt.gca().add_patch(arrow)
+                
+            # ------------------------------- #
+
+        axes.axis('off')
+        axes.axis('equal')
+
         plt.show()

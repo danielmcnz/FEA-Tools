@@ -1,6 +1,8 @@
 import random
 import sys
 import matplotlib
+import json
+import numpy as np
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import *
@@ -9,9 +11,8 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
                                                 NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 
-import json
-
-from FEA.FEA import *
+from .Element import Element
+from .Structure import Structure
 
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):

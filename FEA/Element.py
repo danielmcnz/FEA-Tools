@@ -5,15 +5,17 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from typing import List
 
-from FEA.Supports import Support
-from FEA.Vector import Vec2
+from .Supports import Support
+from .Vector import Vec2
 
 
 class GLOB_DOF:
     cur_index : int = 0
 
-    def __init__(self, value : int = 1):
+    def __init__(self, name : str = "", value : int = 1):
         self.value : int = value
+
+        self.name : str = name
 
         self.index = -1
 
@@ -175,51 +177,55 @@ class Element:
         self.LVL : int = LVL
         self.point_load : tuple = point_load
 
-        self.UDL_forces : np.ndarray        = None
-        self.UDL_f_shear : np.ndarray       = None
-        self.UDL_f_axial : np.ndarray       = None
-        self.UDL_F_shear : np.ndarray       = None
-        self.UDL_F_axial : np.ndarray       = None
+        self.UDL_forces : np.ndarray            = None
+        self.UDL_f_shear : np.ndarray           = None
+        self.UDL_f_axial : np.ndarray           = None
+        self.UDL_F_shear : np.ndarray           = None
+        self.UDL_F_axial : np.ndarray           = None
 
-        self.LVL_forces : np.ndarray        = None
-        self.LVL_f_shear : np.ndarray       = None
-        self.LVL_f_axial : np.ndarray       = None
-        self.LVL_F_axial : np.ndarray       = None
-        self.LVL_F_shear : np.ndarray       = None
+        self.LVL_forces : np.ndarray            = None
+        self.LVL_f_shear : np.ndarray           = None
+        self.LVL_f_axial : np.ndarray           = None
+        self.LVL_F_axial : np.ndarray           = None
+        self.LVL_F_shear : np.ndarray           = None
 
-        self.point_load_forces : np.ndarray = None
-        self.PL_f_shear : np.ndarray        = None
-        self.PL_f_axial : np.ndarray        = None
-        self.PL_F_shear : np.ndarray        = None
-        self.PL_F_axial : np.ndarray        = None
+        self.point_load_forces : np.ndarray     = None
+        self.PL_f_shear : np.ndarray            = None
+        self.PL_f_axial : np.ndarray            = None
+        self.PL_F_shear : np.ndarray            = None
+        self.PL_F_axial : np.ndarray            = None
 
-        self.assembly_mat : np.ndarray = None
+        self.assembly_mat : np.ndarray          = None
 
         self.lambda_mat : np.ndarray            = None
 
         self.local_stiffness : np.ndarray       = None
         self.local_stiffness_hat : np.ndarray   = None
         self.global_stiffness : np.ndarray      = None
+
+        self.stress : np.ndarray                = None
         self.strain : np.ndarray                = None
 
-        self.local_force : np.ndarray           = None
-        self.global_force : np.ndarray          = None
+        self.local_forces : np.ndarray          = None
+        self.global_forces : np.ndarray         = None
 
-        self.element_deflections : np.ndarray       = None
-        self.structural_deflections : np.ndarray    = None
+        self.local_deflections : np.ndarray     = None
+        self.global_deflections : np.ndarray    = None
 
     
     def _find_nodes(self, supports : List[Support]) -> np.ndarray:
 
+        self.nodes = [None, None]
+
         for support in supports:
             if support.pos == self.node_pos[0]:
-                self.nodes[0] = Node(self.node_pos[0], GLOB_DOF(support.x_dof), GLOB_DOF(support.y_dof), GLOB_DOF(support.moment_dof))
+                self.nodes[0] = Node(self.node_pos[0], GLOB_DOF('x', support.x_dof), GLOB_DOF('y', support.y_dof), GLOB_DOF('moment', support.moment_dof))
             if support.pos == self.node_pos[1]:
-                self.nodes[1] = Node(self.node_pos[1], GLOB_DOF(support.x_dof), GLOB_DOF(support.y_dof), GLOB_DOF(support.moment_dof))
+                self.nodes[1] = Node(self.node_pos[1], GLOB_DOF('x', support.x_dof), GLOB_DOF('y', support.y_dof), GLOB_DOF('moment', support.moment_dof))
 
         for i in range(len(self.nodes)):
             if self.nodes[i] is None:
-                self.nodes[i] = Node(self.node_pos[i], GLOB_DOF(), GLOB_DOF(), GLOB_DOF())
+                self.nodes[i] = Node(self.node_pos[i], GLOB_DOF('x'), GLOB_DOF('y'), GLOB_DOF('moment'))
                 
 
 
@@ -466,6 +472,50 @@ class Element:
         self._point_load_forces()
 
 
+    @staticmethod
+    def get_local_deflections(lmbda : np.ndarray, D_e : np.ndarray = None, A : np.ndarray = None, q : np.ndarray = None) -> np.ndarray:
+        error_msg = """
+Incorrect format. Below are possible equations:
+
+[lmbda, D_e] -> d_e = lmbda @ D_e
+[lmbda, A, q] -> d_e = lmbda @ A.T @ q
+"""
+
+        if D_e is not None:
+            return lmbda @ D_e
+        elif A is not None and q is not None:
+            return lmbda @ A.T @ q
+        else:
+            raise ValueError(error_msg)
+
+    
+    @staticmethod
+    def get_global_deflections(A : np.ndarray, q : np.ndarray) -> np.ndarray:
+        return A.T @ q
+
+
+    @staticmethod
+    def get_local_forces(K_e : np.ndarray, d_e : np.ndarray = None, lmbda : np.ndarray = None, D_e : np.ndarray = None) -> np.ndarray:
+        error_msg = """
+Incorrect format. Below are possible equations:
+
+[K_e, d_e] -> f_e = K_e @ d_e
+[K_e, lmbda, D_e] -> f_e = K_e @ lmbda @ D_e
+"""
+
+        if d_e is not None:
+            return K_e @ d_e
+        elif lmbda is not None and D_e is not None:
+            return K_e @ lmbda @ D_e
+        else:
+            raise ValueError(error_msg)
+
+
+    @staticmethod
+    def get_global_forces(K_e_hat : np.ndarray, D_e : np.ndarray) -> np.ndarray:
+        return K_e_hat @ D_e
+
+
     def calculate_force_vector(self, q) -> None:
         """
         Calculates the force vector for an element.
@@ -480,19 +530,21 @@ class Element:
         None
         """
 
-        if(self.global_stiffness is None):
-            raise AssertionError("global_stiffness matrix cannot be None. First call calculate_global_stiffness().")
+        self.global_deflections = Element.get_global_deflections(self.assembly_mat, q)
 
-        self.structural_deflections = self.assembly_mat.T @ q
+        self.local_deflections = Element.get_local_deflections(self.lambda_mat, self.global_deflections)
 
-        self.element_deflections = self.lambda_mat @ self.structural_deflections
+        self.local_forces = Element.get_local_forces(self.local_stiffness, self.local_deflections)
 
-        self.local_force = self.local_stiffness @ self.element_deflections
+        self.global_forces = Element.get_global_forces(self.local_stiffness_hat, self.global_deflections)
+
+
+    def calculate_stresses_and_strains(self):
+
+        self.strain = (self.local_deflections[3:] - self.local_deflections[:3]) / self.L
+
+        self.stress = (self.local_forces[3:] - self.local_forces[:3]) / self.A
         
-        self.strain = (self.element_deflections[3] - self.element_deflections[0]) / self.L
-
-        self.global_force = self.local_stiffness_hat @ self.structural_deflections
-
     
     @staticmethod
     def get_lambda_mat(angle : int) -> np.ndarray:
@@ -526,7 +578,7 @@ class Element:
         return lambda_mat
     
 
-    def calculate_deflections(self, x) -> np.ndarray:
+    def calculate_deflections(self, x, q : np.ndarray = None) -> np.ndarray:
         """
         Calculates the Xg and Yg global deflections of an element.
 
@@ -541,6 +593,11 @@ class Element:
             The Xg and Yg global deflections.
         """
 
+        if q is not None:
+            d_e = Element.get_local_deflections(self.lambda_mat, A=self.assembly_mat, q=q)
+        else:
+            d_e = self.local_deflections
+
         phi_1 = (1 - x / self.L)
         phi_2 = x / self.L
 
@@ -549,8 +606,8 @@ class Element:
         N_3 = 3 * (x ** 2) / (self.L ** 2) - 2 * (x ** 3) / (self.L ** 3)
         N_4 = (x ** 3) / (self.L ** 2) - (x ** 2) / self.L
 
-        element_axial_displacement = phi_1 * self.element_deflections[0] + phi_2 * self.element_deflections[3]
-        element_transverse_displacement = N_1 * self.element_deflections[1] + N_2 * self.element_deflections[2] + N_3 * self.element_deflections[4] + N_4 * self.element_deflections[5]
+        element_axial_displacement = phi_1 * d_e[0] + phi_2 * d_e[3]
+        element_transverse_displacement = N_1 * d_e[1] + N_2 * d_e[2] + N_3 * d_e[4] + N_4 * d_e[5]
 
         deflections_XG = element_axial_displacement * np.cos(np.deg2rad(self.angle)) - element_transverse_displacement * np.sin(np.deg2rad(self.angle))
         deflections_YG = element_axial_displacement * np.sin(np.deg2rad(self.angle)) + element_transverse_displacement * np.cos(np.deg2rad(self.angle))
@@ -719,7 +776,7 @@ class Element:
 
 
 
-    def plot_element(self, displacement_magnitude : int, resolution : int) -> None:
+    def plot_element(self, displacement_magnitude : int, resolution : int, axes, deflections : int, external_deflections : np.ndarray) -> None:
         """
         Plots the element in both deflected and undeflected form.
 
@@ -747,5 +804,15 @@ class Element:
         x_deflected = x_undeflected + deflections_XG * displacement_magnitude
         y_deflected = y_undeflected + deflections_YG * displacement_magnitude
 
-        plt.plot(x_undeflected, y_undeflected, 'b.-', label="Undeflected")
-        plt.plot(x_deflected, y_deflected, 'r.-', label="Deflected")
+        axes.plot(x_undeflected, y_undeflected, 'b', label="Undeflected")
+
+        if deflections:
+            axes.plot(x_deflected, y_deflected, 'r', label="Deflected")
+
+        if external_deflections is not None:
+            deflections_XG, deflections_YG = self.calculate_deflections(x, external_deflections)
+            
+            x_deflected = x_undeflected + deflections_XG * displacement_magnitude
+            y_deflected = y_undeflected + deflections_YG * displacement_magnitude
+        
+            axes.plot(x_deflected, y_deflected, 'g', label="External Deflections")

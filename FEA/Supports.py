@@ -1,6 +1,6 @@
 import numpy as np
 
-from FEA.Vector import Vec2
+from .Vector import Vec2
 
 
 class Support:
@@ -24,10 +24,28 @@ class FixedSupport(Support):
         Support.__init__(self, pos)
 
 
-class RollerSupport(Support):
+class RollerSupportX(Support):
 
     def __init__(self, pos : Vec2):
         Support.__init__(self, pos)
 
         self.x_dof = 1
         self.moment_dof = 1
+
+
+class RollerSupportY(Support):
+
+    def __init__(self, pos : Vec2):
+        Support.__init__(self, pos)
+
+        self.y_dof = 1
+        self.moment_dof = 1
+
+
+class BarElementSupport(Support):
+
+    def __init__(self, pos : Vec2):
+        Support.__init__(self, pos)
+
+        self.x_dof = 1
+        self.y_dof = 1

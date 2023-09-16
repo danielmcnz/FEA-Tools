@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from .Element import Element, Node, GLOB_DOF
-from .Supports import Support, RollerSupport, PinSupport, FixedSupport
+from .Supports import Support, RollerSupport, PinSupport, FixedSupport, Direction
 from .Vector import Vec2
 
 
@@ -196,6 +196,72 @@ class Structure:
             
             kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
 
+            for support in self.supports:
+                pos = support.pos
+
+                support_height = 0.8
+                support_width = 0.6
+                
+                roller_radius = 0.1
+
+                ground_height = Vec2(pos.x, pos.y)
+                ground_dashes = 7
+                
+                if support.direction == Direction.HORIZONTAL.abs():
+                    ground_height.x -= support.direction.x * support_height
+
+                    # plot the triangle
+                    axes.plot([pos.x, pos.x - support.direction.x * support_height], [pos.y, pos.y - support_width / 2], color='black')
+                    axes.plot([pos.x, pos.x - support.direction.x * support_height], [pos.y, pos.y + support_width / 2], color='black')
+                    axes.plot([pos.x - support.direction.x * support_height, pos.x - support.direction.x * support_height], [pos.y - support_width / 2, pos.y + support_width / 2], color='black')
+                    
+                    # add roller specific stuff
+                    if type(support) == RollerSupport:
+                        ground_height.x -= 2 * support.direction.x * roller_radius
+
+                        r1 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y), roller_radius, edgecolor='black', facecolor='none')
+                        r2 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y - 2 * roller_radius), roller_radius, edgecolor='black', facecolor='none')
+                        r3 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y + 2 * roller_radius), roller_radius, edgecolor='black', facecolor='none')
+
+                        plt.gca().add_patch(r1)
+                        plt.gca().add_patch(r2)
+                        plt.gca().add_patch(r3)
+
+                    # plot ground plane
+                    axes.plot([ground_height.x, ground_height.x], [pos.y - support_width, pos.y + support_width], color='black')
+
+
+                elif support.direction == Direction.VERTICAL.abs():
+                    ground_height.y -= support.direction.y * support_height
+
+                    # plot the triangle
+                    axes.plot([pos.x, pos.x - support_width / 2], [pos.y, pos.y - support.direction.y * support_height], color='black')
+                    axes.plot([pos.x, pos.x + support_width / 2], [pos.y, pos.y - support.direction.y * support_height], color='black')
+                    axes.plot([pos.x - support_width / 2, pos.x + support_width / 2], [pos.y - support.direction.y * support_height, pos.y - support.direction.y * support_height], color='black')
+
+                    # add roller specific stuff
+                    if type(support) == RollerSupport:
+                        ground_height.y -= 2 * support.direction.y * roller_radius
+
+                        r1 = patches.Circle((pos.x, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
+                        r2 = patches.Circle((pos.x - 2 * roller_radius, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
+                        r3 = patches.Circle((pos.x + 2 * roller_radius, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
+
+                        plt.gca().add_patch(r1)
+                        plt.gca().add_patch(r2)
+                        plt.gca().add_patch(r3)
+
+                    # plot ground plane
+                    axes.plot([pos.x - support_width, pos.x + support_width], [ground_height.y, ground_height.y], color='black')
+
+                    # plot ground "dashes"
+                    for i in range(ground_dashes):
+                        axes.plot([pos.x - support_width+0.1 + (2 * support_width / ground_dashes) * i, pos.x - support_width + (2 * support_width / ground_dashes) * i], [ground_height.y, ground_height.y - 0.1], color='black')
+
+            for element in self.elements:
+                mid_point = (element.nodes[1].pos + element.nodes[0].pos) / 2
+                axes.annotate(f"E{element.id}", xy=(mid_point.x, mid_point.y), xytext=(-10, 10), textcoords='offset points', color='black', fontsize=font_size)
+            
 
             # ------------------------------- #
             # Plot degrees of freedom arrows  #
@@ -255,7 +321,7 @@ class Structure:
                     )
 
                     
-                    axes.annotate("q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(-5, -15), textcoords='offset points', color='black', fontsize=font_size)
+                    axes.annotate("q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(-27, -2), textcoords='offset points', color='black', fontsize=font_size)
 
                     plt.gca().add_patch(arc)
                     plt.gca().add_patch(arrow)

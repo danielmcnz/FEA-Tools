@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from .Element import Element, Node, GLOB_DOF
-from .Supports import Support
+from .Supports import Support, RollerSupport, PinSupport, FixedSupport
 from .Vector import Vec2
 
 
@@ -197,12 +197,6 @@ class Structure:
             kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
 
 
-            for element in self.elements:
-                mid_point = (element.nodes[1].pos + element.nodes[0].pos) / 2
-                axes.annotate(f"E{element.id}", xy=(mid_point.x, mid_point.y), xytext=(-10, 10), textcoords='offset points', color='black', fontsize=font_size)
-            
-
-
             # ------------------------------- #
             # Plot degrees of freedom arrows  #
             # ------------------------------- #
@@ -216,7 +210,7 @@ class Structure:
                 y_init : float = p.y + arrow_space_from_element.y
 
                 if self.global_nodes[i].x.index >= 0:
-                    a = patches.FancyArrowPatch(
+                    x_dof = patches.FancyArrowPatch(
                         (x_init, y_init), 
                         (x_init + arrow_len, y_init),
                         **kw
@@ -224,11 +218,11 @@ class Structure:
 
                     axes.annotate("q"+str(self.global_nodes[i].x.index+1), xy=(x_init + arrow_len, y_init), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
 
-                    plt.gca().add_patch(a)
+                    plt.gca().add_patch(x_dof)
 
                 if self.global_nodes[i].y.index >= 0:
 
-                    a = patches.FancyArrowPatch(
+                    y_dof = patches.FancyArrowPatch(
                         (x_init, y_init), 
                         (x_init, y_init + arrow_len), 
                         **kw
@@ -236,7 +230,7 @@ class Structure:
 
                     axes.annotate("q"+str(self.global_nodes[i].y.index+1), xy=(x_init, y_init + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
 
-                    plt.gca().add_patch(a)
+                    plt.gca().add_patch(y_dof)
 
                 if self.global_nodes[i].moment.index >= 0:
                     center = (x_init, y_init)
@@ -261,7 +255,7 @@ class Structure:
                     )
 
                     
-                    axes.annotate("q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(0, -20), textcoords='offset points', color='black', fontsize=font_size)
+                    axes.annotate("q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(-5, -15), textcoords='offset points', color='black', fontsize=font_size)
 
                     plt.gca().add_patch(arc)
                     plt.gca().add_patch(arrow)

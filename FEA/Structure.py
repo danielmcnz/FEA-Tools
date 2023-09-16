@@ -222,7 +222,7 @@ class Structure:
                         **kw
                     )
 
-                    axes.annotate("Q"+str(self.global_nodes[i].x.index+1), xy=(x_init + arrow_len, y_init), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
+                    axes.annotate("q"+str(self.global_nodes[i].x.index+1), xy=(x_init + arrow_len, y_init), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
 
                     plt.gca().add_patch(a)
 
@@ -234,7 +234,7 @@ class Structure:
                         **kw
                     )
 
-                    axes.annotate("Q"+str(self.global_nodes[i].y.index+1), xy=(x_init, y_init + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
+                    axes.annotate("q"+str(self.global_nodes[i].y.index+1), xy=(x_init, y_init + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
 
                     plt.gca().add_patch(a)
 
@@ -261,7 +261,7 @@ class Structure:
                     )
 
                     
-                    axes.annotate("Q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(0, -20), textcoords='offset points', color='black', fontsize=font_size)
+                    axes.annotate("q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(0, -20), textcoords='offset points', color='black', fontsize=font_size)
 
                     plt.gca().add_patch(arc)
                     plt.gca().add_patch(arrow)

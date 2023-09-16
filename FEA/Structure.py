@@ -123,10 +123,7 @@ class Structure:
         GLOB_DOF.cur_index = 0
         Element.element_index = 0
 
-        self.Q = self._original_Q
-
         self.global_nodes.clear()
-        
 
         self._calculate_asm_mats()
 

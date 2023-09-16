@@ -319,7 +319,11 @@ class Element:
         """
 
         if(self.UDL == 0):
-            return
+            self.UDL_f_axial = np.zeros((self.n_element_dofs, 1))
+            self.UDL_F_axial = np.zeros((self.n_element_dofs, 1))
+            self.UDL_f_shear = np.zeros((self.n_element_dofs, 1))
+            self.UDL_F_shear = np.zeros((self.n_element_dofs, 1))
+            self.UDL_forces = np.zeros((self.n_element_dofs, 1))
 
         angle = self.UDL[0]
         udl = self.UDL[1]
@@ -366,7 +370,11 @@ class Element:
         """
 
         if(self.LVL == 0):
-            return
+            self.LVL_f_axial = np.zeros((self.n_element_dofs, 1))
+            self.LVL_F_axial = np.zeros((self.n_element_dofs, 1))
+            self.LVL_f_shear = np.zeros((self.n_element_dofs, 1))
+            self.LVL_F_shear = np.zeros((self.n_element_dofs, 1))
+            self.LVL_forces = np.zeros((self.n_element_dofs, 1))
 
         angle = self.LVL[0]
         lvl = self.LVL[1]
@@ -415,8 +423,12 @@ class Element:
         """
 
         if(self.point_load[2] == 0):
-            return
-
+            self.PL_F_axial = np.zeros((self.n_element_dofs, 1))
+            self.PL_F_shear = np.zeros((self.n_element_dofs, 1))
+            self.PL_f_axial = np.zeros((self.n_element_dofs, 1))
+            self.PL_f_shear = np.zeros((self.n_element_dofs, 1))
+            self.point_load_forces = np.zeros((self.n_element_dofs, 1))
+            
         a = self.point_load[0]
         angle = self.point_load[1]
         point_load = self.point_load[2]

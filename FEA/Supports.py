@@ -36,9 +36,9 @@ class RollerSupport(Support):
         Support.__init__(self, pos, direction)
 
         if direction.x == 1:
-            self.x_dof = 1
-        elif direction.y == 1:
             self.y_dof = 1
+        elif direction.y == 1:
+            self.x_dof = 1
         else:
             raise ValueError("Direction must be either horizontal or vertical")
 

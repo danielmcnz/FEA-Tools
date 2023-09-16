@@ -155,7 +155,7 @@ class Structure:
             element.calculate_stresses_and_strains()
 
 
-    def plot_structure(self, displacement_magnitude : int, resolution : int, deflections : int = False, annotations : int = False, width : int = 15, height : int = 5, external_deflections : np.ndarray = None) -> None:
+    def plot_structure(self, displacement_magnitude : int, resolution : int, deflections : int = False, annotations : int = False, deflection_annotations : int = False, width : int = 15, height : int = 5, external_deflections : np.ndarray = None) -> None:
         """
         Plots the structure.
 
@@ -187,16 +187,10 @@ class Structure:
 
             axes.legend(by_label.values(), by_label.keys())
 
-
-        if annotations:
-            font_size = 10
-
-            arrow_space_from_element = Vec2(0.01, 0.05)
-            arrow_len = 0.5
-            
-            kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
-
-            for support in self.supports:
+        # ------------------------------- #
+        #        plot the supports        #
+        # ------------------------------- #
+        for support in self.supports:
                 pos = support.pos
 
                 support_height = 0.8
@@ -258,10 +252,25 @@ class Structure:
                     for i in range(ground_dashes):
                         axes.plot([pos.x - support_width+0.1 + (2 * support_width / ground_dashes) * i, pos.x - support_width + (2 * support_width / ground_dashes) * i], [ground_height.y, ground_height.y - 0.1], color='black')
 
+        # ------------------------------- #
+
+
+        if annotations or deflection_annotations:
+            font_size = 10
+
+            arrow_space_from_element = Vec2(0.01, 0.05)
+            arrow_len = 0.5
+            
+            kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
+
+            
+
             for element in self.elements:
                 mid_point = (element.nodes[1].pos + element.nodes[0].pos) / 2
                 axes.annotate(f"E{element.id}", xy=(mid_point.x, mid_point.y), xytext=(-10, 10), textcoords='offset points', color='black', fontsize=font_size)
             
+            if deflection_annotations:
+                print("deflection annotations not currently supported")
 
             # ------------------------------- #
             # Plot degrees of freedom arrows  #
@@ -276,55 +285,57 @@ class Structure:
                 y_init : float = p.y + arrow_space_from_element.y
 
                 if self.global_nodes[i].x.index >= 0:
-                    x_dof = patches.FancyArrowPatch(
-                        (x_init, y_init), 
-                        (x_init + arrow_len, y_init),
-                        **kw
-                    )
+                    if annotations:
+                        x_dof = patches.FancyArrowPatch(
+                            (x_init, y_init), 
+                            (x_init + arrow_len, y_init),
+                            **kw
+                        )
 
-                    axes.annotate("q"+str(self.global_nodes[i].x.index+1), xy=(x_init + arrow_len, y_init), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
+                        axes.annotate("q"+str(self.global_nodes[i].x.index+1), xy=(x_init + arrow_len, y_init), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
 
-                    plt.gca().add_patch(x_dof)
+                        plt.gca().add_patch(x_dof)
 
                 if self.global_nodes[i].y.index >= 0:
+                    if annotations:
+                        y_dof = patches.FancyArrowPatch(
+                            (x_init, y_init), 
+                            (x_init, y_init + arrow_len), 
+                            **kw
+                        )
 
-                    y_dof = patches.FancyArrowPatch(
-                        (x_init, y_init), 
-                        (x_init, y_init + arrow_len), 
-                        **kw
-                    )
+                        axes.annotate("q"+str(self.global_nodes[i].y.index+1), xy=(x_init, y_init + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
 
-                    axes.annotate("q"+str(self.global_nodes[i].y.index+1), xy=(x_init, y_init + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
-
-                    plt.gca().add_patch(y_dof)
+                        plt.gca().add_patch(y_dof)
 
                 if self.global_nodes[i].moment.index >= 0:
-                    center = (x_init, y_init)
-                    radius = 0.2
+                    if annotations:
+                        center = (x_init, y_init)
+                        radius = 0.2
 
-                    start_angle = 0
-                    end_angle = 270  # 3/4 of a full circle
+                        start_angle = 0
+                        end_angle = 270  # 3/4 of a full circle
 
-                    arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
-                                    linewidth=2, color='black')
+                        arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
+                                        linewidth=2, color='black')
 
-                    # Calculate the coordinates of the end point of the arc
-                    end_angle_rad = np.radians(end_angle)
-                    end_x = center[0] + radius * np.cos(end_angle_rad)
-                    end_y = center[1] + radius * np.sin(end_angle_rad)
+                        # Calculate the coordinates of the end point of the arc
+                        end_angle_rad = np.radians(end_angle)
+                        end_x = center[0] + radius * np.cos(end_angle_rad)
+                        end_y = center[1] + radius * np.sin(end_angle_rad)
 
-                    # Create an arrow patch at the end of the arc
-                    arrow = patches.FancyArrowPatch(
-                        (end_x - 0.01, end_y), 
-                        (end_x + 0.05, end_y),
-                        **kw
-                    )
+                        # Create an arrow patch at the end of the arc
+                        arrow = patches.FancyArrowPatch(
+                            (end_x - 0.01, end_y), 
+                            (end_x + 0.05, end_y),
+                            **kw
+                        )
 
-                    
-                    axes.annotate("q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(-27, -2), textcoords='offset points', color='black', fontsize=font_size)
+                        
+                        axes.annotate("q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(-27, -2), textcoords='offset points', color='black', fontsize=font_size)
 
-                    plt.gca().add_patch(arc)
-                    plt.gca().add_patch(arrow)
+                        plt.gca().add_patch(arc)
+                        plt.gca().add_patch(arrow)
                 
             # ------------------------------- #
 

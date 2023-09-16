@@ -473,42 +473,18 @@ class Element:
 
 
     @staticmethod
-    def get_local_deflections(lmbda : np.ndarray, D_e : np.ndarray = None, A : np.ndarray = None, q : np.ndarray = None) -> np.ndarray:
-        error_msg = """
-Incorrect format. Below are possible equations:
+    def get_local_deflections(lmbda : np.ndarray, D_e : np.ndarray = None) -> np.ndarray:
+        return lmbda @ D_e
 
-[lmbda, D_e] -> d_e = lmbda @ D_e
-[lmbda, A, q] -> d_e = lmbda @ A.T @ q
-"""
 
-        if D_e is not None:
-            return lmbda @ D_e
-        elif A is not None and q is not None:
-            return lmbda @ A.T @ q
-        else:
-            raise ValueError(error_msg)
-
-    
     @staticmethod
     def get_global_deflections(A : np.ndarray, q : np.ndarray) -> np.ndarray:
         return A.T @ q
 
 
     @staticmethod
-    def get_local_forces(K_e : np.ndarray, d_e : np.ndarray = None, lmbda : np.ndarray = None, D_e : np.ndarray = None) -> np.ndarray:
-        error_msg = """
-Incorrect format. Below are possible equations:
-
-[K_e, d_e] -> f_e = K_e @ d_e
-[K_e, lmbda, D_e] -> f_e = K_e @ lmbda @ D_e
-"""
-
-        if d_e is not None:
-            return K_e @ d_e
-        elif lmbda is not None and D_e is not None:
-            return K_e @ lmbda @ D_e
-        else:
-            raise ValueError(error_msg)
+    def get_local_forces(K_e : np.ndarray, d_e : np.ndarray = None) -> np.ndarray:
+        return K_e @ d_e
 
 
     @staticmethod

@@ -348,14 +348,16 @@ class Structure:
 
 
 
-    def plot_reaction_forces(self, width : int = 15, height : int = 5):
+    def get_reaction_forces(self, plot : int = False, width : int = 15, height : int = 5):
         """
         """
 
         fig, axes = plt.subplots(figsize=(width, height))
 
-        for support in self.supports:
+        reaction_forces = {}
 
+        n_support = 0
+        for support in self.supports:
             reaction_force = 0
             for element in self.elements:
                 for i in range(len(element.node_pos)):
@@ -381,77 +383,84 @@ class Structure:
             for i in range(len(reaction_force)):
                 if reaction_force[i][0] < 0.0001:
                     reaction_force[i][0] = 0
-                            
+
+            reaction_forces[n_support] = reaction_force
+
+            if plot:               
+                # Plot Support Name
+
+                name = ""
+
+                if type(support) == PinSupport:
+                    name = "Pin Support"
+                elif type(support) == RollerSupport:
+                    name = "Roller Support"
+
+                axes.annotate(f"{name}", xy=(support.pos.x, support.pos.y), xytext=(-50, 60), textcoords='offset points', color='black', fontsize=15)
+
+                
+                # Plot reaction force arrows and magnitudes
+
+                arrow_len = 0.5
+                arrow_space_from_support = Vec2(0.01, 0.05)
+
+                kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
+
+                x_force = patches.FancyArrowPatch(
+                                (support.pos.x, support.pos.y), 
+                                (support.pos.x + arrow_len, support.pos.y), 
+                                **kw)
+                
+                axes.annotate(f"{reaction_force[0][0]/1000:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(35, -30), textcoords='offset points', color='black', fontsize=10)
+
+                plt.gca().add_patch(x_force)
+
+
+                y_force = patches.FancyArrowPatch(
+                                (support.pos.x, support.pos.y), 
+                                (support.pos.x, support.pos.y + arrow_len), 
+                                **kw)
+                
+                axes.annotate(f"{reaction_force[1][0]/1000+0:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=10)
+
+                plt.gca().add_patch(y_force)
+
+
+                center = (support.pos.x, support.pos.y)
+                radius = 0.2
+
+                start_angle = 0
+                end_angle = 270  # 3/4 of a full circle
+
+                moment_force_arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
+                                linewidth=2, color='black')
+
+                # Calculate the coordinates of the end point of the arc
+                end_angle_rad = np.radians(end_angle)
+                end_x = center[0] + radius * np.cos(end_angle_rad)
+                end_y = center[1] + radius * np.sin(end_angle_rad)
+
+                # Create an arrow patch at the end of the arc
+                moment_force_arrow = patches.FancyArrowPatch(
+                    (end_x - 0.01, end_y), 
+                    (end_x + 0.05, end_y),
+                    **kw
+                )
+                
+                axes.annotate(f"{(reaction_force[2][0])/1000:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(-55, -40), textcoords='offset points', color='black', fontsize=10)
+
+                plt.gca().add_patch(moment_force_arc)
+                plt.gca().add_patch(moment_force_arrow)
+
+            n_support+=1
+
+
+        if plot:
             self._plot_supports(axes)
-            
 
-            # Plot Support Name
+            axes.axis('off')
+            axes.axis('equal')
 
-            name = ""
+            plt.show()
 
-            if type(support) == PinSupport:
-                name = "Pin Support"
-            elif type(support) == RollerSupport:
-                name = "Roller Support"
-
-            axes.annotate(f"{name}", xy=(support.pos.x, support.pos.y), xytext=(-50, 60), textcoords='offset points', color='black', fontsize=15)
-
-            
-            # Plot reaction force arrows and magnitudes
-
-            arrow_len = 0.5
-            arrow_space_from_support = Vec2(0.01, 0.05)
-
-            kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
-
-            x_force = patches.FancyArrowPatch(
-                            (support.pos.x, support.pos.y), 
-                            (support.pos.x + arrow_len, support.pos.y), 
-                            **kw)
-            
-            axes.annotate(f"{reaction_force[0][0]/1000:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(35, -30), textcoords='offset points', color='black', fontsize=10)
-
-            plt.gca().add_patch(x_force)
-
-
-            y_force = patches.FancyArrowPatch(
-                            (support.pos.x, support.pos.y), 
-                            (support.pos.x, support.pos.y + arrow_len), 
-                            **kw)
-            
-            axes.annotate(f"{reaction_force[1][0]/1000+0:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=10)
-
-            plt.gca().add_patch(y_force)
-
-
-            center = (support.pos.x, support.pos.y)
-            radius = 0.2
-
-            start_angle = 0
-            end_angle = 270  # 3/4 of a full circle
-
-            moment_force_arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
-                            linewidth=2, color='black')
-
-            # Calculate the coordinates of the end point of the arc
-            end_angle_rad = np.radians(end_angle)
-            end_x = center[0] + radius * np.cos(end_angle_rad)
-            end_y = center[1] + radius * np.sin(end_angle_rad)
-
-            # Create an arrow patch at the end of the arc
-            moment_force_arrow = patches.FancyArrowPatch(
-                (end_x - 0.01, end_y), 
-                (end_x + 0.05, end_y),
-                **kw
-            )
-            
-            axes.annotate(f"{(reaction_force[2][0])/1000:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(-55, -40), textcoords='offset points', color='black', fontsize=10)
-
-            plt.gca().add_patch(moment_force_arc)
-            plt.gca().add_patch(moment_force_arrow)
-
-
-        axes.axis('off')
-        axes.axis('equal')
-
-        plt.show()
+        return reaction_forces

@@ -198,8 +198,12 @@ class Structure:
 
             arrow_space_from_element = Vec2(0.01, 0.05)
             arrow_len = 0.5
+            q_arrow_len = 0.3
+
+            displacement_line_height = 0.8
             
             kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
+            double_arrow_kw = dict(arrowstyle="<->, head_width=4, head_length=8", color='k')
 
             
 
@@ -233,6 +237,28 @@ class Structure:
                         axes.annotate("q"+str(self.global_nodes[i].x.index+1), xy=(x_init + arrow_len, y_init), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
 
                         plt.gca().add_patch(x_dof)
+                    # if deflection_annotations:
+                    #     # plot the spacing between the original x position and the deflected x position
+                    #     axes.plot([x_init, x_init], [y_init, y_init+displacement_line_height], color='black')
+                    #     axes.plot([x_init + self.q[self.global_nodes[i].x.index][0]*displacement_magnitude, x_init + self.q[self.global_nodes[i].x.index][0]*displacement_magnitude], [y_init, y_init+displacement_line_height], color='black')
+                        
+                    #     x_diff_arrow_left = patches.FancyArrowPatch(
+                    #         (x_init - q_arrow_len, y_init + displacement_line_height/2), 
+                    #         (x_init, y_init + displacement_line_height/2),
+                    #         **kw
+                    #     )
+
+                    #     x_diff_arrow_right = patches.FancyArrowPatch(
+                    #         (x_init + self.q[self.global_nodes[i].x.index][0]*displacement_magnitude + q_arrow_len, y_init + displacement_line_height/2), 
+                    #         (x_init + self.q[self.global_nodes[i].x.index][0]*displacement_magnitude, y_init + displacement_line_height/2),
+                    #         **kw
+                    #     )
+                        
+                    #     axes.annotate(f"{self.q[self.global_nodes[i].x.index][0]*1000:.2f}mm", xy=(x_init + arrow_len, y_init), xytext=(0, 30), textcoords='offset points', color='black', fontsize=font_size)
+                        
+                    #     plt.gca().add_patch(x_diff_arrow_left)
+                    #     plt.gca().add_patch(x_diff_arrow_right)
+
 
                 if self.global_nodes[i].y.index >= 0:
                     if annotations:
@@ -245,35 +271,86 @@ class Structure:
                         axes.annotate("q"+str(self.global_nodes[i].y.index+1), xy=(x_init, y_init + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=font_size)
 
                         plt.gca().add_patch(y_dof)
+                    # if deflection_annotations:
+                    #     # plot the spacing between the original x position and the deflected x position
+                    #     axes.plot([x_init, x_init+displacement_line_height], [y_init, y_init], color='black')
+                    #     axes.plot([x_init, x_init + displacement_line_height], [y_init + self.q[self.global_nodes[i].y.index][0]*displacement_magnitude, y_init+ self.q[self.global_nodes[i].y.index][0]*displacement_magnitude], color='black')
+                        
+                    #     y_diff_arrow_left = patches.FancyArrowPatch(
+                    #         (x_init + displacement_line_height/2, y_init + q_arrow_len), 
+                    #         (x_init + displacement_line_height/2, y_init),
+                    #         **kw
+                    #     )
+
+                    #     y_diff_arrow_right = patches.FancyArrowPatch(
+                    #         (x_init + displacement_line_height/2, y_init + self.q[self.global_nodes[i].y.index][0]*displacement_magnitude - q_arrow_len), 
+                    #         (x_init + displacement_line_height/2, y_init + self.q[self.global_nodes[i].y.index][0]*displacement_magnitude),
+                    #         **kw
+                    #     )
+                        
+                    #     axes.annotate(f"{self.q[self.global_nodes[i].x.index][0]*1000:.2f}mm", xy=(x_init, y_init + arrow_len), xytext=(5, -50), textcoords='offset points', color='black', fontsize=font_size)
+                        
+                    #     plt.gca().add_patch(y_diff_arrow_left)
+                    #     plt.gca().add_patch(y_diff_arrow_right)
 
                 if self.global_nodes[i].moment.index >= 0:
+                    center = (x_init, y_init)
+                    radius = 0.2
+
+                    start_angle = 0
+                    end_angle = 270  # 3/4 of a full circle
+
+                    arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
+                                    linewidth=2, color='black')
+
+                    # Calculate the coordinates of the end point of the arc
+                    end_angle_rad = np.radians(end_angle)
+                    end_x = center[0] + radius * np.cos(end_angle_rad)
+                    end_y = center[1] + radius * np.sin(end_angle_rad)
+                    
                     if annotations:
-                        center = (x_init, y_init)
-                        radius = 0.2
-
-                        start_angle = 0
-                        end_angle = 270  # 3/4 of a full circle
-
-                        arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
-                                        linewidth=2, color='black')
-
-                        # Calculate the coordinates of the end point of the arc
-                        end_angle_rad = np.radians(end_angle)
-                        end_x = center[0] + radius * np.cos(end_angle_rad)
-                        end_y = center[1] + radius * np.sin(end_angle_rad)
-
                         # Create an arrow patch at the end of the arc
                         arrow = patches.FancyArrowPatch(
                             (end_x - 0.01, end_y), 
                             (end_x + 0.05, end_y),
                             **kw
                         )
-
                         
                         axes.annotate("q"+str(self.global_nodes[i].moment.index+1), xy=(end_x - 0.05, end_y), xytext=(-27, -2), textcoords='offset points', color='black', fontsize=font_size)
 
                         plt.gca().add_patch(arc)
                         plt.gca().add_patch(arrow)
+
+                    # if deflection_annotations:
+                    #     # plot the spacing between the original x position and the deflected x position
+                    #     # end_angle_rad = np.radians()
+                    #     # end_x = center[0] + radius * np.cos(end_angle_rad)
+                    #     # end_y = center[1] + radius * np.sin(end_angle_rad)
+                    #     # axes.plot([x_init, x_init+end_x], [y_init, y_init+end_y], color='black')
+                    #     # print(f"{x_init*displacement_magnitude} : {y_init*displacement_magnitude}")
+                    #     # print(self.q[self.global_nodes[i].moment.index][0]*displacement_magnitude)
+
+                    #     print(np.arccos(np.deg2rad(self.q[self.global_nodes[i].moment.index][0]*displacement_magnitude / (x_init*displacement_magnitude+1))))
+                        
+                    #     axes.plot([x_init - displacement_line_height, x_init], [y_init, y_init], color='black')
+                    #     axes.plot([x_init - displacement_line_height, x_init], [y_init, y_init + self.q[self.global_nodes[i].moment.index][0]*displacement_magnitude], color='black')
+                        
+                    #     # moment_diff_arrow_left = patches.FancyArrowPatch(
+                    #     #     (x_init + displacement_line_height/2, y_init + q_arrow_len), 
+                    #     #     (x_init + displacement_line_height/2, y_init),
+                    #     #     **kw
+                    #     # )
+
+                    #     # moment_diff_arrow_right = patches.FancyArrowPatch(
+                    #     #     (x_init + displacement_line_height/2, y_init + self.q[self.global_nodes[i].moment.index][0]*displacement_magnitude - q_arrow_len), 
+                    #     #     (x_init + displacement_line_height/2, y_init + self.q[self.global_nodes[i].moment.index][0]*displacement_magnitude),
+                    #     #     **kw
+                    #     # )
+                        
+                    #     # axes.annotate(f"{self.q[self.global_nodes[i].x.index][0]*1000:.2f}mm", xy=(x_init, y_init + arrow_len), xytext=(5, -50), textcoords='offset points', color='black', fontsize=font_size)
+                        
+                    #     # plt.gca().add_patch(moment_diff_arrow_left)
+                    #     # plt.gca().add_patch(moment_diff_arrow_right)
                 
             # ------------------------------- #
 

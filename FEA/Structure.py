@@ -187,68 +187,9 @@ class Structure:
         # ------------------------------- #
         #        plot the supports        #
         # ------------------------------- #
-        for support in self.supports:
-                pos = support.pos
 
-                support_height = 0.8
-                support_width = 0.6
-                
-                roller_radius = 0.1
-
-                ground_height = Vec2(pos.x, pos.y)
-                ground_dashes = 7
-                
-                if support.direction == Direction.HORIZONTAL.abs():
-                    ground_height.x -= support.direction.x * support_height
-
-                    # plot the triangle
-                    axes.plot([pos.x, pos.x - support.direction.x * support_height], [pos.y, pos.y - support_width / 2], color='black')
-                    axes.plot([pos.x, pos.x - support.direction.x * support_height], [pos.y, pos.y + support_width / 2], color='black')
-                    axes.plot([pos.x - support.direction.x * support_height, pos.x - support.direction.x * support_height], [pos.y - support_width / 2, pos.y + support_width / 2], color='black')
-                    
-                    # add roller specific stuff
-                    if type(support) == RollerSupport:
-                        ground_height.x -= 2 * support.direction.x * roller_radius
-
-                        r1 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y), roller_radius, edgecolor='black', facecolor='none')
-                        r2 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y - 2 * roller_radius), roller_radius, edgecolor='black', facecolor='none')
-                        r3 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y + 2 * roller_radius), roller_radius, edgecolor='black', facecolor='none')
-
-                        plt.gca().add_patch(r1)
-                        plt.gca().add_patch(r2)
-                        plt.gca().add_patch(r3)
-
-                    # plot ground plane
-                    axes.plot([ground_height.x, ground_height.x], [pos.y - support_width, pos.y + support_width], color='black')
-
-
-                elif support.direction == Direction.VERTICAL.abs():
-                    ground_height.y -= support.direction.y * support_height
-
-                    # plot the triangle
-                    axes.plot([pos.x, pos.x - support_width / 2], [pos.y, pos.y - support.direction.y * support_height], color='black')
-                    axes.plot([pos.x, pos.x + support_width / 2], [pos.y, pos.y - support.direction.y * support_height], color='black')
-                    axes.plot([pos.x - support_width / 2, pos.x + support_width / 2], [pos.y - support.direction.y * support_height, pos.y - support.direction.y * support_height], color='black')
-
-                    # add roller specific stuff
-                    if type(support) == RollerSupport:
-                        ground_height.y -= 2 * support.direction.y * roller_radius
-
-                        r1 = patches.Circle((pos.x, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
-                        r2 = patches.Circle((pos.x - 2 * roller_radius, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
-                        r3 = patches.Circle((pos.x + 2 * roller_radius, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
-
-                        plt.gca().add_patch(r1)
-                        plt.gca().add_patch(r2)
-                        plt.gca().add_patch(r3)
-
-                    # plot ground plane
-                    axes.plot([pos.x - support_width, pos.x + support_width], [ground_height.y, ground_height.y], color='black')
-
-                    # plot ground "dashes"
-                    for i in range(ground_dashes):
-                        axes.plot([pos.x - support_width+0.1 + (2 * support_width / ground_dashes) * i, pos.x - support_width + (2 * support_width / ground_dashes) * i], [ground_height.y, ground_height.y - 0.1], color='black')
-
+        self._plot_supports(axes)
+        
         # ------------------------------- #
 
 
@@ -335,6 +276,180 @@ class Structure:
                         plt.gca().add_patch(arrow)
                 
             # ------------------------------- #
+
+        axes.axis('off')
+        axes.axis('equal')
+
+        plt.show()
+
+
+    def _plot_supports(self, axes):
+        for support in self.supports:
+            pos = support.pos
+
+            support_height = 0.8
+            support_width = 0.6
+            
+            roller_radius = 0.1
+
+            ground_height = Vec2(pos.x, pos.y)
+            ground_dashes = 7
+            
+            if support.direction == Direction.HORIZONTAL.abs():
+                ground_height.x -= support.direction.x * support_height
+
+                # plot the triangle
+                axes.plot([pos.x, pos.x - support.direction.x * support_height], [pos.y, pos.y - support_width / 2], color='black')
+                axes.plot([pos.x, pos.x - support.direction.x * support_height], [pos.y, pos.y + support_width / 2], color='black')
+                axes.plot([pos.x - support.direction.x * support_height, pos.x - support.direction.x * support_height], [pos.y - support_width / 2, pos.y + support_width / 2], color='black')
+                
+                # add roller specific stuff
+                if type(support) == RollerSupport:
+                    ground_height.x -= 2 * support.direction.x * roller_radius
+
+                    r1 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y), roller_radius, edgecolor='black', facecolor='none')
+                    r2 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y - 2 * roller_radius), roller_radius, edgecolor='black', facecolor='none')
+                    r3 = patches.Circle((pos.x - support.direction.x * support_height - roller_radius, pos.y + 2 * roller_radius), roller_radius, edgecolor='black', facecolor='none')
+
+                    plt.gca().add_patch(r1)
+                    plt.gca().add_patch(r2)
+                    plt.gca().add_patch(r3)
+
+                # plot ground plane
+                axes.plot([ground_height.x, ground_height.x], [pos.y - support_width, pos.y + support_width], color='black')
+
+
+            elif support.direction == Direction.VERTICAL.abs():
+                ground_height.y -= support.direction.y * support_height
+
+                # plot the triangle
+                axes.plot([pos.x, pos.x - support_width / 2], [pos.y, pos.y - support.direction.y * support_height], color='black')
+                axes.plot([pos.x, pos.x + support_width / 2], [pos.y, pos.y - support.direction.y * support_height], color='black')
+                axes.plot([pos.x - support_width / 2, pos.x + support_width / 2], [pos.y - support.direction.y * support_height, pos.y - support.direction.y * support_height], color='black')
+
+                # add roller specific stuff
+                if type(support) == RollerSupport:
+                    ground_height.y -= 2 * support.direction.y * roller_radius
+
+                    r1 = patches.Circle((pos.x, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
+                    r2 = patches.Circle((pos.x - 2 * roller_radius, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
+                    r3 = patches.Circle((pos.x + 2 * roller_radius, pos.y - support.direction.y * support_height - roller_radius), roller_radius, edgecolor='black', facecolor='none')
+
+                    plt.gca().add_patch(r1)
+                    plt.gca().add_patch(r2)
+                    plt.gca().add_patch(r3)
+
+                # plot ground plane
+                axes.plot([pos.x - support_width, pos.x + support_width], [ground_height.y, ground_height.y], color='black')
+
+                # plot ground "dashes"
+                for i in range(ground_dashes):
+                    axes.plot([pos.x - support_width+0.1 + (2 * support_width / ground_dashes) * i, pos.x - support_width + (2 * support_width / ground_dashes) * i], [ground_height.y, ground_height.y - 0.1], color='black')
+
+
+
+    def plot_reaction_forces(self, width : int = 15, height : int = 5):
+        """
+        """
+
+        fig, axes = plt.subplots(figsize=(width, height))
+
+        for support in self.supports:
+
+            reaction_force = 0
+            for element in self.elements:
+                for i in range(len(element.node_pos)):
+                    if element.node_pos[i] == support.pos:
+                        if i == 0:
+                            reaction_force += (element.global_forces[:3] 
+                                                - element.UDL_F_axial[:3]
+                                                - element.UDL_F_shear[:3]
+                                                - element.LVL_F_axial[:3]
+                                                - element.LVL_F_shear[:3]
+                                                - element.PL_F_axial[:3]
+                                                - element.PL_F_shear[:3])
+                        elif i == 1:
+                            reaction_force += (element.global_forces[3:]
+                                                - element.UDL_F_axial[3:]
+                                                - element.UDL_F_shear[3:]
+                                                - element.LVL_F_axial[3:]
+                                                - element.LVL_F_shear[3:]
+                                                - element.PL_F_axial[3:]
+                                                - element.PL_F_shear[3:])
+                            
+
+            for i in range(len(reaction_force)):
+                if reaction_force[i][0] < 0.0001:
+                    reaction_force[i][0] = 0
+                            
+            self._plot_supports(axes)
+            
+
+            # Plot Support Name
+
+            name = ""
+
+            if type(support) == PinSupport:
+                name = "Pin Support"
+            elif type(support) == RollerSupport:
+                name = "Roller Support"
+
+            axes.annotate(f"{name}", xy=(support.pos.x, support.pos.y), xytext=(-50, 60), textcoords='offset points', color='black', fontsize=15)
+
+            
+            # Plot reaction force arrows and magnitudes
+
+            arrow_len = 0.5
+            arrow_space_from_support = Vec2(0.01, 0.05)
+
+            kw = dict(arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color='k')
+
+            x_force = patches.FancyArrowPatch(
+                            (support.pos.x, support.pos.y), 
+                            (support.pos.x + arrow_len, support.pos.y), 
+                            **kw)
+            
+            axes.annotate(f"{reaction_force[0][0]/1000:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(35, -30), textcoords='offset points', color='black', fontsize=10)
+
+            plt.gca().add_patch(x_force)
+
+
+            y_force = patches.FancyArrowPatch(
+                            (support.pos.x, support.pos.y), 
+                            (support.pos.x, support.pos.y + arrow_len), 
+                            **kw)
+            
+            axes.annotate(f"{reaction_force[1][0]/1000+0:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(0, 0), textcoords='offset points', color='black', fontsize=10)
+
+            plt.gca().add_patch(y_force)
+
+
+            center = (support.pos.x, support.pos.y)
+            radius = 0.2
+
+            start_angle = 0
+            end_angle = 270  # 3/4 of a full circle
+
+            moment_force_arc = patches.Arc(center, radius*2, radius*2, angle=0, theta1=start_angle, theta2=end_angle,
+                            linewidth=2, color='black')
+
+            # Calculate the coordinates of the end point of the arc
+            end_angle_rad = np.radians(end_angle)
+            end_x = center[0] + radius * np.cos(end_angle_rad)
+            end_y = center[1] + radius * np.sin(end_angle_rad)
+
+            # Create an arrow patch at the end of the arc
+            moment_force_arrow = patches.FancyArrowPatch(
+                (end_x - 0.01, end_y), 
+                (end_x + 0.05, end_y),
+                **kw
+            )
+            
+            axes.annotate(f"{(reaction_force[2][0])/1000:.2f}kN", xy=(support.pos.x, support.pos.y + arrow_len), xytext=(-55, -40), textcoords='offset points', color='black', fontsize=10)
+
+            plt.gca().add_patch(moment_force_arc)
+            plt.gca().add_patch(moment_force_arrow)
+
 
         axes.axis('off')
         axes.axis('equal')
